@@ -1,0 +1,10 @@
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import type { Role } from "@/types/api";
+
+/** Gates a route subtree to specific roles; renders /forbidden otherwise. Use inside ProtectedRoute. */
+export function RoleRoute({ roles }: { roles: Role[] }) {
+  const { hasRole } = useAuth();
+  if (!hasRole(...roles)) return <Navigate to="/forbidden" replace />;
+  return <Outlet />;
+}
