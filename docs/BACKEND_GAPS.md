@@ -79,6 +79,9 @@ element from the list endpoint).
 submissions still awaiting review. Once approved or rejected, a submission
 disappears from what the admin panel can query — there's no way to show
 review history, reviewer performance, or approval/rejection trend charts.
+(Still true after the submission schema moved from concept+suggested-translation
+to source-word+category+Bangla/English — `GET /api/v1/submissions` only returns
+the *calling user's own* submissions, not an admin-wide, all-status view.)
 
 **Required endpoint:** `GET /api/v1/admin/submissions?status=PENDING|APPROVED|REJECTED`
 

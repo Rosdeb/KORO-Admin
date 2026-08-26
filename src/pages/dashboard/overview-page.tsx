@@ -123,10 +123,10 @@ export function OverviewPage() {
                   <div key={s.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">
-                        {s.concept?.name} → {s.suggestedTranslation}
+                        {s.sourceWord} → {s.englishTranslation}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {s.submittedBy?.name} · {s.language?.name} ·{" "}
+                        {s.submittedBy?.name} · {s.sourceLanguage?.name} ·{" "}
                         {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
                       </p>
                     </div>

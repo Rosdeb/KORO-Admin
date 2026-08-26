@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, X, Info } from "lucide-react";
+import { Check, X, Info, Volume2, Quote, StickyNote, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
@@ -31,7 +31,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { TranslationSubmission } from "@/types/api";
 
-type ReviewAction = "approve" | "reject";
+type ReviewAction = "view" | "approve" | "reject";
 
 export function SubmissionsQueuePage() {
   const queryClient = useQueryClient();
@@ -44,14 +44,18 @@ export function SubmissionsQueuePage() {
   const debouncedSearch = useDebouncedValue(search);
   const [reviewTarget, setReviewTarget] = useState<{ submission: TranslationSubmission; action: ReviewAction } | null>(null);
   const [reviewerNote, setReviewerNote] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const filtered = useMemo(() => {
     if (!debouncedSearch.trim()) return data ?? [];
     const q = debouncedSearch.toLowerCase();
     return (data ?? []).filter(
       (s) =>
-        s.suggestedTranslation.toLowerCase().includes(q) ||
-        s.concept?.name?.toLowerCase().includes(q) ||
+        s.sourceWord.toLowerCase().includes(q) ||
+        s.banglaTranslation.toLowerCase().includes(q) ||
+        s.englishTranslation.toLowerCase().includes(q) ||
+        s.category?.name?.toLowerCase().includes(q) ||
+        s.sourceLanguage?.name?.toLowerCase().includes(q) ||
         s.submittedBy?.name?.toLowerCase().includes(q),
     );
   }, [data, debouncedSearch]);
@@ -59,25 +63,55 @@ export function SubmissionsQueuePage() {
   const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, action, note }: { id: string; action: ReviewAction; note: string }) =>
-      action === "approve" ? submissionsApi.approve(id, { reviewerNote: note }) : submissionsApi.reject(id, { reviewerNote: note }),
+    mutationFn: ({
+      id,
+      action,
+      note,
+      reason,
+    }: {
+      id: string;
+      action: Exclude<ReviewAction, "view">;
+      note: string;
+      reason: string;
+    }) =>
+      action === "approve"
+        ? submissionsApi.approve(id, { reviewerNote: note || undefined })
+        : submissionsApi.reject(id, { reviewerNote: note || undefined, rejectionReason: reason }),
     onSuccess: (_, variables) => {
       queryClient.setQueryData<TranslationSubmission[]>(queryKeys.pendingSubmissions, (prev) =>
         prev?.filter((s) => s.id !== variables.id),
       );
-      setReviewTarget(null);
-      setReviewerNote("");
+      toast.success(variables.action === "approve" ? "Submission approved and published." : "Submission rejected.");
+      closeDialog();
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to review submission"),
   });
+
+  function openReview(submission: TranslationSubmission, action: ReviewAction) {
+    setReviewTarget({ submission, action });
+    setReviewerNote("");
+    setRejectionReason("");
+  }
+
+  function closeDialog() {
+    setReviewTarget(null);
+    setReviewerNote("");
+    setRejectionReason("");
+  }
+
+  function switchAction(action: ReviewAction) {
+    setReviewTarget((prev) => (prev ? { ...prev, action } : prev));
+  }
+
+  const rejectReasonMissing = reviewTarget?.action === "reject" && !rejectionReason.trim();
 
   if (error) return <ErrorState error={error} onRetry={() => refetch()} className="mt-10" />;
 
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Submission Queue"
-        description="Crowd-sourced translations waiting for review."
+        title="Translation Submissions"
+        description="Community-submitted dictionary words waiting for review."
         actions={<RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />}
       />
 
@@ -89,7 +123,12 @@ export function SubmissionsQueuePage() {
         </span>
       </div>
 
-      <SearchInput value={search} onChange={setSearch} placeholder="Search by concept, translation, or submitter…" className="max-w-sm" />
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by word, meaning, category, language, or submitter…"
+        className="max-w-sm"
+      />
 
       <Card className="overflow-hidden">
       <CardContent className="p-0">
@@ -108,9 +147,10 @@ export function SubmissionsQueuePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Concept</TableHead>
-                <TableHead>Language</TableHead>
-                <TableHead>Suggested translation</TableHead>
+                <TableHead>Source word</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Bangla</TableHead>
+                <TableHead>English</TableHead>
                 <TableHead>Submitted by</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -119,30 +159,32 @@ export function SubmissionsQueuePage() {
             <TableBody>
               {pageItems.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.concept?.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{s.language?.name}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p>{s.suggestedTranslation}</p>
-                      {s.pronunciation && <p className="text-xs text-muted-foreground">{s.pronunciation}</p>}
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{s.sourceWord}</span>
+                      <Badge variant="outline">{s.sourceLanguage?.name}</Badge>
                     </div>
+                    {s.pronunciation && <p className="text-xs text-muted-foreground">/{s.pronunciation}/</p>}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{s.category?.name}</Badge>
+                  </TableCell>
+                  <TableCell>{s.banglaTranslation}</TableCell>
+                  <TableCell>{s.englishTranslation}</TableCell>
                   <TableCell className="text-muted-foreground">{s.submittedBy?.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="outline" onClick={() => openReview(s, "view")}>
+                        <Eye className="size-4" /> View
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="border-success/40 text-success hover:bg-success/10 hover:text-success"
-                        onClick={() => {
-                          setReviewTarget({ submission: s, action: "approve" });
-                          setReviewerNote("");
-                        }}
+                        onClick={() => openReview(s, "approve")}
                       >
                         <Check className="size-4" /> Approve
                       </Button>
@@ -150,10 +192,7 @@ export function SubmissionsQueuePage() {
                         size="sm"
                         variant="outline"
                         className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => {
-                          setReviewTarget({ submission: s, action: "reject" });
-                          setReviewerNote("");
-                        }}
+                        onClick={() => openReview(s, "reject")}
                       >
                         <X className="size-4" /> Reject
                       </Button>
@@ -171,61 +210,167 @@ export function SubmissionsQueuePage() {
       </CardContent>
       </Card>
 
-      <Dialog open={!!reviewTarget} onOpenChange={(open) => !open && setReviewTarget(null)}>
-        <DialogContent>
+      <Dialog open={!!reviewTarget} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{reviewTarget?.action === "approve" ? "Approve submission" : "Reject submission"}</DialogTitle>
+            <DialogTitle>
+              {reviewTarget?.action === "view"
+                ? "Submission details"
+                : reviewTarget?.action === "approve"
+                  ? "Approve submission"
+                  : "Reject submission"}
+            </DialogTitle>
             <DialogDescription>
-              {reviewTarget?.submission.concept?.name} → "{reviewTarget?.submission.suggestedTranslation}" (
-              {reviewTarget?.submission.language?.name})
+              {reviewTarget?.action === "view"
+                ? "Full details of this pending submission."
+                : reviewTarget?.action === "approve"
+                  ? "This word will be published to the official dictionary immediately."
+                  : "The contributor will see your rejection reason on their submission."}
             </DialogDescription>
           </DialogHeader>
 
           {reviewTarget && (
-            <Card className="bg-muted/40">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Submission details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 pt-0 text-sm">
-                <p>
-                  <span className="text-muted-foreground">Submitted by: </span>
-                  {reviewTarget.submission.submittedBy?.name} ({reviewTarget.submission.submittedBy?.email})
-                </p>
-                {reviewTarget.submission.notes && (
-                  <p>
-                    <span className="text-muted-foreground">Notes: </span>
-                    {reviewTarget.submission.notes}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <Card className="bg-muted/40">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Word information</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-0 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Category</p>
+                    <p>{reviewTarget.submission.category?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Source language</p>
+                    <p>{reviewTarget.submission.sourceLanguage?.name}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Source word</p>
+                    <p className="font-medium">{reviewTarget.submission.sourceWord}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-muted/40">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Translation</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-0 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bangla</p>
+                    <p>{reviewTarget.submission.banglaTranslation}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">English</p>
+                    <p>{reviewTarget.submission.englishTranslation}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {(reviewTarget.submission.pronunciation ||
+                reviewTarget.submission.exampleSentence ||
+                reviewTarget.submission.notes) && (
+                <Card className="bg-muted/40">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-medium text-muted-foreground">Additional information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1.5 pt-0 text-sm">
+                    {reviewTarget.submission.pronunciation && (
+                      <p className="flex items-start gap-1.5">
+                        <Volume2 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                        {reviewTarget.submission.pronunciation}
+                      </p>
+                    )}
+                    {reviewTarget.submission.exampleSentence && (
+                      <p className="flex items-start gap-1.5">
+                        <Quote className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                        {reviewTarget.submission.exampleSentence}
+                      </p>
+                    )}
+                    {reviewTarget.submission.notes && (
+                      <p className="flex items-start gap-1.5">
+                        <StickyNote className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                        {reviewTarget.submission.notes}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Submitted by {reviewTarget.submission.submittedBy?.name} ({reviewTarget.submission.submittedBy?.email})
+              </p>
+            </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="reviewerNote">Reviewer note (optional)</Label>
-            <Textarea
-              id="reviewerNote"
-              rows={3}
-              placeholder="Add context for this decision…"
-              value={reviewerNote}
-              onChange={(e) => setReviewerNote(e.target.value)}
-            />
-          </div>
+          {reviewTarget?.action === "reject" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="rejectionReason">
+                Rejection reason <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="rejectionReason"
+                rows={2}
+                placeholder="e.g. Duplicate of an existing entry."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          )}
+
+          {reviewTarget?.action !== "view" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="reviewerNote">Reviewer note (optional)</Label>
+              <Textarea
+                id="reviewerNote"
+                rows={2}
+                placeholder="Add context for this decision…"
+                value={reviewerNote}
+                onChange={(e) => setReviewerNote(e.target.value)}
+              />
+            </div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewTarget(null)} disabled={reviewMutation.isPending}>
-              Cancel
-            </Button>
-            <Button
-              variant={reviewTarget?.action === "reject" ? "destructive" : "default"}
-              disabled={reviewMutation.isPending}
-              onClick={() =>
-                reviewTarget &&
-                reviewMutation.mutate({ id: reviewTarget.submission.id, action: reviewTarget.action, note: reviewerNote })
-              }
-            >
-              {reviewMutation.isPending ? "Submitting…" : reviewTarget?.action === "approve" ? "Approve" : "Reject"}
-            </Button>
+            {reviewTarget?.action === "view" ? (
+              <>
+                <Button variant="outline" onClick={closeDialog}>
+                  Close
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => switchAction("reject")}
+                >
+                  <X className="size-4" /> Reject
+                </Button>
+                <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => switchAction("approve")}>
+                  <Check className="size-4" /> Approve
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={closeDialog} disabled={reviewMutation.isPending}>
+                  Cancel
+                </Button>
+                <Button
+                  variant={reviewTarget?.action === "reject" ? "destructive" : "default"}
+                  disabled={reviewMutation.isPending || rejectReasonMissing}
+                  onClick={() =>
+                    reviewTarget &&
+                    reviewTarget.action !== "view" &&
+                    reviewMutation.mutate({
+                      id: reviewTarget.submission.id,
+                      action: reviewTarget.action,
+                      note: reviewerNote,
+                      reason: rejectionReason,
+                    })
+                  }
+                >
+                  {reviewMutation.isPending ? "Submitting…" : reviewTarget?.action === "approve" ? "Approve" : "Reject"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

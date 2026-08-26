@@ -62,18 +62,32 @@ export interface TranslationResponse {
   notes: string | null;
 }
 
+/**
+ * A submission is a full dictionary entry — a word in its source language, plus the
+ * two translations that are always required (Bangla, English) — not a suggestion
+ * against a pre-existing Concept. On approval the backend finds-or-creates a Concept
+ * by `englishTranslation` and upserts Translation rows for the source language (and
+ * Bangla/English, unless the source language already is one of those); no separate
+ * dictionary-read endpoint exists, the word simply becomes visible through the
+ * existing `/api/v1/translations` family. See docs/API_MAPPING.md.
+ */
 export interface TranslationSubmission {
   id: string;
-  concept: Concept;
-  language: Language;
-  suggestedTranslation: string;
+  category: Category;
+  sourceLanguage: Language;
+  sourceWord: string;
+  banglaTranslation: string;
+  englishTranslation: string;
   pronunciation: string | null;
+  exampleSentence: string | null;
   notes: string | null;
   submittedBy: UserResponse;
   status: SubmissionStatus | string;
   reviewerNote: string | null;
+  rejectionReason: string | null;
   reviewedBy: UserResponse | null;
   createdAt: string;
+  updatedAt: string;
   reviewedAt: string | null;
 }
 
@@ -169,6 +183,24 @@ export interface TranslationRequest {
 
 export interface SubmissionReviewRequest {
   reviewerNote?: string;
+  /** Required by the backend (400 if missing/blank) when calling the reject endpoint. */
+  rejectionReason?: string;
+}
+
+/**
+ * Body for `POST /api/v1/submissions` (end-user "submit a word" flow — see
+ * "Endpoints intentionally not surfaced" in docs/API_MAPPING.md; kept here for type
+ * parity with the live schema even though the admin panel doesn't create submissions).
+ */
+export interface SubmissionRequest {
+  categoryId: string;
+  sourceLanguageId: string;
+  sourceWord: string;
+  banglaTranslation: string;
+  englishTranslation: string;
+  pronunciation?: string;
+  exampleSentence?: string;
+  note?: string;
 }
 
 /** Generic error envelope returned by the backend's default exception handler. */

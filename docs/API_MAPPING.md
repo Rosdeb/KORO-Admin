@@ -68,11 +68,20 @@ full edit/delete live on the backend and in the admin panel.
 
 ## Moderation
 
+A submission is a full dictionary entry — a word in its **source language**, plus
+the two translations that are always required (Bangla, English) — not a generic
+suggestion against a pre-existing Concept. On approval, the backend finds-or-creates
+a `Concept` by `englishTranslation` (tagged with the submission's category) and
+upserts `Translation` rows for the source language and for Bangla/English (skipped
+for whichever of those the source language already is); the word then simply shows
+up through the existing `/api/v1/translations` family — no separate dictionary-read
+endpoint exists.
+
 | Page | Endpoint | Auth |
 |---|---|---|
-| Submission Queue (list) | `GET /api/v1/admin/submissions/pending` | Admin or Reviewer. **Only pending submissions are listable** — no endpoint returns approved/rejected history. |
-| Approve | `POST /api/v1/admin/submissions/{id}/approve` `{ reviewerNote }` | Admin or Reviewer |
-| Reject | `POST /api/v1/admin/submissions/{id}/reject` `{ reviewerNote }` | Admin or Reviewer |
+| Submission Queue (list) | `GET /api/v1/admin/submissions/pending` → `TranslationSubmission[]` (`category`, `sourceLanguage`, `sourceWord`, `banglaTranslation`, `englishTranslation`, `pronunciation`, `exampleSentence`, `notes`, `status`, `rejectionReason`, …) | Admin or Reviewer. **Only pending submissions are listable** — no endpoint returns approved/rejected history. |
+| Approve | `POST /api/v1/admin/submissions/{id}/approve` `{ reviewerNote? }` | Admin or Reviewer |
+| Reject | `POST /api/v1/admin/submissions/{id}/reject` `{ reviewerNote?, rejectionReason }` — `rejectionReason` is required, `400` if missing/blank | Admin or Reviewer |
 | My Activity | `GET /api/v1/activity?from=&to=` | Any role, but scoped to the caller's own actions | `from`/`to` are `date` (not `date-time`) query params. |
 | My Activity statistics panel | `GET /api/v1/activity/statistics` | Same as above | Also an undocumented-schema `object` — rendered dynamically like `/admin/statistics`. |
 
@@ -102,5 +111,10 @@ them:
 - `/api/v1/images/**` — AI vision recognition history, owner-only.
 - `/api/v1/export/**` — PDF export history, owner-only (except `POST /pdf` and
   file download, which aren't admin actions either).
-- `/api/v1/submissions` (`GET`, plain) — this is "my submissions" for the
-  calling user, distinct from `/api/v1/admin/submissions/pending`.
+- `/api/v1/submissions` — `GET` ("my submissions") and `POST` (`SubmissionRequest`:
+  `categoryId`, `sourceLanguageId`, `sourceWord`, `banglaTranslation`,
+  `englishTranslation` required, `pronunciation`/`exampleSentence`/`note`
+  optional; `409` if the source word already exists for that language among
+  official entries or non-rejected submissions) — the end-user "submit a word"
+  flow, distinct from `/api/v1/admin/submissions/pending`. `SubmissionRequest`
+  is typed in `src/types/api.ts` for schema parity but has no consuming UI here.
