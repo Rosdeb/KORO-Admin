@@ -13,11 +13,8 @@ export const adminUsersApi = {
     });
     return res.data;
   },
-  /**
-   * Grants/revokes roles. Documented in doc/API_MAPPING.md and confirmed live (the route
-   * returns 401 rather than 404 for unauthenticated calls), but it is absent from the
-   * generated /v3/api-docs — verify it after any backend redeploy. See docs/BACKEND_GAPS.md.
-   */
+  /** Grants/revokes roles — replaces the account's full role set (ROLE_USER always kept
+   *  by the backend). Confirmed live in /v3/api-docs (operationId: updateUserRoles). */
   async updateRoles(id: string, roles: Role[]): Promise<UserResponse> {
     const res = await httpClient.put<UserResponse>(`/api/v1/admin/users/${id}/roles`, roles);
     return res.data;

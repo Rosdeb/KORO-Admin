@@ -113,35 +113,16 @@ in the admin panel now — this gap is closed.
 
 ---
 
-### 5. `PUT /api/v1/admin/users/{id}/roles` is undocumented in the live OpenAPI spec
+### 5. ~~`PUT /api/v1/admin/users/{id}/roles` is undocumented in the live OpenAPI spec~~ — Resolved
 
 **Feature:** Role management on the User Details page.
 
-**Current behavior:** `/doc` describes this endpoint in full detail as a
-working, recently-added feature, and calling it unauthenticated returns `401`
-(meaning the route is registered in Spring Security's filter chain) rather
-than `404`. However, it does **not** appear in the generated
-`/v3/api-docs` output at all — every other admin endpoint does. Because
-Spring Security's `AuthorizationFilter` rejects unauthenticated requests to
-any `/api/v1/admin/**` path before Spring MVC resolves the handler, a `401` on
-an unauthenticated probe doesn't actually prove the controller method exists;
-it's inconclusive either way.
-
-**What the admin panel does:** Calls it exactly as documented in `/doc`
-(`adminUsersApi.updateRoles`), since that's the authoritative written contract
-for this backend, and surfaces the raw error (including a "may not be
-deployed yet" hint on `404`) if it fails.
-
-**Action needed:** Confirm with the backend team whether this controller
-method is present in the currently-deployed build. If it's missing, it needs
-to be added per the existing `/doc` spec:
-`PUT /api/v1/admin/users/{id}/roles`, body: `string[]` of role names, response:
-updated `UserResponse`. If it's present but simply missing `@Operation`
-metadata or excluded from springdoc scanning, no code change is needed —
-just confirm and this note can be deleted.
-
-**Priority:** High — blocks the "grant elevated roles" flow, the only way to
-create new Admin/Reviewer accounts short of direct DB writes.
+The endpoint now appears in the generated `/v3/api-docs` output
+(`operationId: updateUserRoles`, request body `string[]`, response `object`),
+alongside `ROLE_MODERATOR` becoming a real, enforced role (see the "Roles"
+section of `docs/backend_api` and the Moderator-specific endpoints below). Grants
+made from the User Details page (`adminUsersApi.updateRoles`) now include
+Moderator as an assignable role — this gap is closed.
 
 ---
 

@@ -3,6 +3,14 @@ import { Globe2 } from "lucide-react";
 import { NAV_SECTIONS } from "./nav-config";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import type { Role } from "@/types/api";
+
+function panelLabel(hasRole: (...roles: Role[]) => boolean): string {
+  if (hasRole("ROLE_ADMIN")) return "Koro Admin";
+  if (hasRole("ROLE_MODERATOR")) return "Koro Moderator";
+  if (hasRole("ROLE_LANGUAGE_REVIEWER")) return "Koro Reviewer";
+  return "Koro Admin";
+}
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user, hasRole } = useAuth();
@@ -13,7 +21,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <Globe2 className="size-3.5" />
         </div>
-        <span className="text-sm font-semibold tracking-tight">Koro Admin</span>
+        <span className="text-sm font-semibold tracking-tight">{panelLabel(hasRole)}</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">

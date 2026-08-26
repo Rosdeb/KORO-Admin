@@ -11,6 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/api/client";
+import type { Role } from "@/types/api";
+
+/** Admins land on the Overview dashboard; Reviewers/Moderators land on the Submission Queue,
+ *  the only "home" page their role can actually see (Overview/Analytics call admin-only endpoints). */
+function landingPathFor(roles: Role[]): string {
+  return roles.includes("ROLE_ADMIN") ? "/dashboard" : "/submissions";
+}
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
@@ -20,7 +27,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const { isAuthenticated, isBootstrapping, login } = useAuth();
+  const { isAuthenticated, isBootstrapping, user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -32,7 +39,7 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
   if (!isBootstrapping && isAuthenticated) {
-    const from = (location.state as { from?: string } | null)?.from ?? "/dashboard";
+    const from = (location.state as { from?: string } | null)?.from ?? landingPathFor(user?.roles ?? []);
     return <Navigate to={from} replace />;
   }
 
@@ -41,8 +48,11 @@ export function LoginPage() {
     try {
       const user = await login(values.email, values.password);
       toast.success(`Welcome back, ${user.name.split(" ")[0]}`);
-      const isPanelRole = user.roles.includes("ROLE_ADMIN") || user.roles.includes("ROLE_LANGUAGE_REVIEWER");
-      navigate(isPanelRole ? "/dashboard" : "/forbidden", { replace: true });
+      const isPanelRole =
+        user.roles.includes("ROLE_ADMIN") ||
+        user.roles.includes("ROLE_LANGUAGE_REVIEWER") ||
+        user.roles.includes("ROLE_MODERATOR");
+      navigate(isPanelRole ? landingPathFor(user.roles) : "/forbidden", { replace: true });
     } catch (err) {
       const message =
         err instanceof ApiError

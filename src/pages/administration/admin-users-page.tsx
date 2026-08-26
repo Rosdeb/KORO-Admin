@@ -20,7 +20,10 @@ export function AdminUsersPage() {
   const { data, isLoading, isFetching, error, refetch } = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
 
   const elevated = useMemo(
-    () => (data ?? []).filter((u) => u.roles.includes("ROLE_ADMIN") || u.roles.includes("ROLE_LANGUAGE_REVIEWER")),
+    () =>
+      (data ?? []).filter(
+        (u) => u.roles.includes("ROLE_ADMIN") || u.roles.includes("ROLE_LANGUAGE_REVIEWER") || u.roles.includes("ROLE_MODERATOR"),
+      ),
     [data],
   );
 
@@ -30,7 +33,7 @@ export function AdminUsersPage() {
     <div className="space-y-4">
       <PageHeader
         title="Admin Users"
-        description="Accounts holding elevated (Admin or Language Reviewer) roles. Manage grants from a user's detail page."
+        description="Accounts holding elevated (Admin, Reviewer, or Moderator) roles. Manage grants from a user's detail page."
         actions={<RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />}
       />
 
@@ -44,7 +47,7 @@ export function AdminUsersPage() {
         </div>
       ) : elevated.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="No elevated accounts" description="No users currently hold Admin or Reviewer roles." />
+          <EmptyState title="No elevated accounts" description="No users currently hold Admin, Reviewer, or Moderator roles." />
         </div>
       ) : (
         <Table>

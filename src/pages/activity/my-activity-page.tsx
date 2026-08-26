@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Info } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
@@ -18,6 +17,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { humanizeKey, formatNumber } from "@/lib/utils";
+import { countByKey } from "@/lib/analytics";
 
 export function MyActivityPage() {
   const [from, setFrom] = useState("");
@@ -41,6 +41,8 @@ export function MyActivityPage() {
 
   const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 15);
 
+  const byType = useMemo(() => countByKey(data ?? [], (a) => a.activityType), [data]);
+
   if (error) return <ErrorState error={error} onRetry={() => refetch()} className="mt-10" />;
 
   return (
@@ -59,17 +61,9 @@ export function MyActivityPage() {
         }
       />
 
-      <div className="flex items-start gap-2 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-        <Info className="mt-0.5 size-3.5 shrink-0" />
-        <span>
-          GET /api/v1/activity is scoped to the signed-in account only, for every role including Admin — there is no
-          platform-wide activity feed. See docs/BACKEND_GAPS.md for the suggested admin-scope endpoint.
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-end">
+          <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="search">Search</Label>
               <SearchInput value={search} onChange={setSearch} placeholder="Search activity type or description…" />
@@ -108,6 +102,22 @@ export function MyActivityPage() {
           </CardContent>
         </Card>
       </div>
+
+      {byType.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">By activity type</CardTitle>
+            <CardDescription className="text-xs">Counted from the entries loaded above.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-1.5">
+            {byType.map((t) => (
+              <Badge key={t.name} variant="outline" className="font-normal">
+                {t.name} <span className="text-muted-foreground">· {t.value}</span>
+              </Badge>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
       <CardContent className="p-0">

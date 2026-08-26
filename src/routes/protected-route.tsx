@@ -18,7 +18,7 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (!hasRole("ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER")) {
+  if (!hasRole("ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR")) {
     return <Navigate to="/forbidden" replace />;
   }
 

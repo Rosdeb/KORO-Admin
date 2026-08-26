@@ -8,6 +8,7 @@ import { AuthProvider } from "@/features/auth/auth-context";
 import { ProtectedRoute } from "@/routes/protected-route";
 import { RoleRoute } from "@/routes/role-route";
 import { AppLayout } from "@/layouts/app-layout";
+import { useAuth } from "@/hooks/use-auth";
 
 import { LoginPage } from "@/pages/auth/login-page";
 import { ForbiddenPage } from "@/pages/errors/forbidden-page";
@@ -54,6 +55,14 @@ function PageFallback() {
   );
 }
 
+/** Admins land on the Overview dashboard; Reviewers/Moderators land on the Submission
+ *  Queue — the only "home" page their role can actually see (Overview/Analytics are
+ *  backed by admin-only endpoints). */
+function IndexRedirect() {
+  const { hasRole } = useAuth();
+  return <Navigate to={hasRole("ROLE_ADMIN") ? "/dashboard" : "/submissions"} replace />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -67,7 +76,7 @@ export default function App() {
 
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppLayout />}>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
+                    <Route index element={<IndexRedirect />} />
 
                     <Route element={<RoleRoute roles={["ROLE_ADMIN"]} />}>
                       <Route path="dashboard" element={<OverviewPage />} />
@@ -80,7 +89,7 @@ export default function App() {
                       <Route path="administration/settings" element={<SettingsPage />} />
                     </Route>
 
-                    <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER"]} />}>
+                    <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR"]} />}>
                       <Route path="content/languages" element={<LanguagesPage />} />
                       <Route path="content/categories" element={<CategoriesPage />} />
                       <Route path="content/concepts" element={<ConceptsPage />} />

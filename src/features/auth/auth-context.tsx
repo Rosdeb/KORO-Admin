@@ -2,7 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import { authApi, httpClient, ApiError } from "@/api";
 import { tokenStorage } from "@/lib/token-storage";
 import { authStorage, type AuthUser } from "@/lib/auth-storage";
-import type { Role } from "@/types/api";
+import type { Role, UserResponse } from "@/types/api";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -32,10 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        // Cheap call to confirm the session is still valid (also triggers the
-        // refresh-token interceptor transparently if the access token expired).
-        await httpClient.get("/api/v1/users/profile");
-        if (!cancelled) setUser(storedUser);
+        // Also refreshes roles/status from the server on every load — a role grant made
+        // by an admin while this browser had a cached session (e.g. ROLE_USER -> ROLE_MODERATOR)
+        // would otherwise stay invisible here until the user explicitly logged out and back in,
+        // even though the backend and JWT already reflect the change.
+        const res = await httpClient.get<UserResponse>("/api/v1/users/profile");
+        const freshUser: AuthUser = { id: res.data.id, name: res.data.name, email: res.data.email, roles: res.data.roles };
+        authStorage.setUser(freshUser);
+        if (!cancelled) setUser(freshUser);
       } catch (err) {
         if (err instanceof ApiError && err.status !== 401) {
           // Network/server hiccup, not an auth failure — keep the session optimistically.

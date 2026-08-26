@@ -22,9 +22,18 @@ import { initials } from "@/lib/utils";
 import type { Role, UserResponse } from "@/types/api";
 
 const ASSIGNABLE_ROLES: { role: Role; label: string; description: string }[] = [
+  {
+    role: "ROLE_LANGUAGE_REVIEWER",
+    label: "Language Reviewer",
+    description: "Can review the submission queue (approve/reject) and see their own review history. No content editing.",
+  },
+  {
+    role: "ROLE_MODERATOR",
+    label: "Moderator",
+    description:
+      "Everything a Reviewer can do, plus limited dictionary editing — can fix an existing concept or translation, but can't create or delete them.",
+  },
   { role: "ROLE_ADMIN", label: "Admin", description: "Full platform control" },
-  { role: "ROLE_LANGUAGE_REVIEWER", label: "Language Reviewer", description: "Can review the submission queue" },
-  { role: "ROLE_MODERATOR", label: "Moderator", description: "Reserved — no endpoint currently checks for it" },
 ];
 
 export function UserDetailsPage() {
@@ -54,11 +63,7 @@ export function UserDetailsPage() {
       );
     },
     onError: (err) => {
-      toast.error(
-        err instanceof ApiError
-          ? `${err.message}${err.status === 404 ? " — this endpoint may not be deployed yet, see docs/BACKEND_GAPS.md" : ""}`
-          : "Failed to update roles",
-      );
+      toast.error(err instanceof ApiError ? err.message : "Failed to update roles");
     },
   });
 

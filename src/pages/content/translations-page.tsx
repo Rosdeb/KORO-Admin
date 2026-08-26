@@ -48,6 +48,8 @@ type TranslationFormValues = z.infer<typeof translationSchema>;
 
 export function TranslationsPage() {
   const { hasRole } = useAuth();
+  // Moderators get the backend's "limited dictionary edit" — PUT only, no create/delete (see docs/backend_api §4).
+  const canEdit = hasRole("ROLE_ADMIN", "ROLE_MODERATOR");
   const canManage = hasRole("ROLE_ADMIN");
   const queryClient = useQueryClient();
 
@@ -207,7 +209,7 @@ export function TranslationsPage() {
                     <TableHead>Translation</TableHead>
                     <TableHead>Pronunciation</TableHead>
                     <TableHead>Verified</TableHead>
-                    {canManage && <TableHead className="text-right">Actions</TableHead>}
+                    {canEdit && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -223,20 +225,22 @@ export function TranslationsPage() {
                       <TableCell>
                         <Badge variant={t.verified ? "success" : "secondary"}>{t.verified ? "Verified" : "Unverified"}</Badge>
                       </TableCell>
-                      {canManage && (
+                      {canEdit && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(t)}>
                               <Pencil className="size-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 text-destructive hover:text-destructive"
-                              onClick={() => setPendingDelete(t)}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
+                            {canManage && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-destructive hover:text-destructive"
+                                onClick={() => setPendingDelete(t)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       )}

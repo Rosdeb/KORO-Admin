@@ -29,7 +29,10 @@ export interface NavSection {
 }
 
 const ADMIN: Role[] = ["ROLE_ADMIN"];
-const ADMIN_OR_REVIEWER: Role[] = ["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER"];
+/** Everyone who can sign into the panel besides plain ROLE_USER — Reviewer and Moderator
+ *  both get the submission queue and content views; only page-level checks (canManage /
+ *  canEdit) further narrow what each can actually do. See docs/backend_api §"Roles". */
+const STAFF: Role[] = ["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR"];
 
 export const NAV_SECTIONS: NavSection[] = [
   {
@@ -46,17 +49,17 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Content",
     items: [
-      { label: "Languages", to: "/content/languages", icon: Languages, roles: ADMIN_OR_REVIEWER },
-      { label: "Categories", to: "/content/categories", icon: FolderTree, roles: ADMIN_OR_REVIEWER },
-      { label: "Concepts", to: "/content/concepts", icon: BookOpen, roles: ADMIN_OR_REVIEWER },
-      { label: "Translations", to: "/content/translations", icon: Type, roles: ADMIN_OR_REVIEWER },
+      { label: "Languages", to: "/content/languages", icon: Languages, roles: STAFF },
+      { label: "Categories", to: "/content/categories", icon: FolderTree, roles: STAFF },
+      { label: "Concepts", to: "/content/concepts", icon: BookOpen, roles: STAFF },
+      { label: "Translations", to: "/content/translations", icon: Type, roles: STAFF },
     ],
   },
   {
     label: "Moderation",
     items: [
-      { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: ADMIN_OR_REVIEWER },
-      { label: "My Activity", to: "/activity", icon: Activity, roles: ADMIN_OR_REVIEWER },
+      { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: STAFF },
+      { label: "My Activity", to: "/activity", icon: Activity, roles: STAFF },
     ],
   },
   {

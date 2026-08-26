@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, X, Info, Volume2, Quote, StickyNote, Eye } from "lucide-react";
+import { Check, X, Volume2, Quote, StickyNote, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
@@ -114,14 +114,6 @@ export function SubmissionsQueuePage() {
         description="Community-submitted dictionary words waiting for review."
         actions={<RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />}
       />
-
-      <div className="flex items-start gap-2 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-        <Info className="mt-0.5 size-3.5 shrink-0" />
-        <span>
-          Only the pending queue is exposed by the API — there's no endpoint to list already-approved or rejected
-          submissions, so no history view is shown here. See docs/BACKEND_GAPS.md.
-        </span>
-      </div>
 
       <SearchInput
         value={search}
