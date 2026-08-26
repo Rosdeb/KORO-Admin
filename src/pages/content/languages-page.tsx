@@ -10,6 +10,7 @@ import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
+import { Pagination } from "@/components/shared/pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,6 +32,7 @@ import {
 import { languagesApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
+import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/hooks/use-auth";
 import type { Language, LanguagePayload } from "@/types/api";
@@ -70,6 +72,8 @@ export function LanguagesPage() {
       (l) => l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q) || l.nativeName.toLowerCase().includes(q),
     );
   }, [data, debouncedSearch]);
+
+  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
 
   const saveMutation = useMutation({
     mutationFn: (payload: LanguagePayload) =>
@@ -153,50 +157,55 @@ export function LanguagesPage() {
               <EmptyState title="No languages found" description="Try a different search term." />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Native name</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="text-right">Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((lang) => (
-                  <TableRow key={lang.id}>
-                    <TableCell className="font-medium">{lang.name}</TableCell>
-                    <TableCell>{lang.nativeName}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{lang.code}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{lang.region ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={lang.active ? "success" : "secondary"}>{lang.active ? "Active" : "Inactive"}</Badge>
-                    </TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(lang)}>
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-destructive hover:text-destructive"
-                            onClick={() => setPendingDelete(lang)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Native name</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Region</TableHead>
+                    <TableHead>Status</TableHead>
+                    {canManage && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((lang) => (
+                    <TableRow key={lang.id}>
+                      <TableCell className="font-medium">{lang.name}</TableCell>
+                      <TableCell>{lang.nativeName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{lang.code}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{lang.region ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={lang.active ? "success" : "secondary"}>{lang.active ? "Active" : "Inactive"}</Badge>
+                      </TableCell>
+                      {canManage && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(lang)}>
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-destructive hover:text-destructive"
+                              onClick={() => setPendingDelete(lang)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="border-t border-border p-3">
+                <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
