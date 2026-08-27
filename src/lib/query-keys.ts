@@ -4,6 +4,7 @@ export const queryKeys = {
   activity: ["activity"] as const,
   activityStatistics: ["activity", "statistics"] as const,
   languages: ["languages"] as const,
+  languagesAdmin: ["languages", "admin"] as const,
   categories: ["categories"] as const,
   concepts: (categoryId?: string) => ["concepts", categoryId ?? "all"] as const,
   translations: (params?: { conceptId?: string; languageId?: string }) =>

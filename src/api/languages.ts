@@ -6,6 +6,12 @@ export const languagesApi = {
     const res = await httpClient.get<Language[]>("/api/v1/languages");
     return res.data;
   },
+  /** Admin/moderator listing: includes deactivated (active: false) languages, which the
+   *  public /api/v1/languages endpoint filters out. */
+  async adminList(): Promise<Language[]> {
+    const res = await httpClient.get<Language[]>("/api/v1/admin/languages");
+    return res.data;
+  },
   async create(payload: LanguagePayload): Promise<Language> {
     const res = await httpClient.post<Language>("/api/v1/admin/languages", payload);
     return res.data;

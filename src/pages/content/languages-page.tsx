@@ -51,8 +51,14 @@ type LanguageFormValues = z.infer<typeof languageSchema>;
 export function LanguagesPage() {
   const { hasRole } = useAuth();
   const canManage = hasRole("ROLE_ADMIN");
+  // ADMIN / MODERATOR can hit the admin listing, which also returns deactivated
+  // languages. LANGUAGE_REVIEWER can only see the public (active-only) list.
+  const canSeeInactive = hasRole("ROLE_ADMIN", "ROLE_MODERATOR");
   const queryClient = useQueryClient();
-  const { data, isLoading, isFetching, error, refetch } = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: canSeeInactive ? queryKeys.languagesAdmin : queryKeys.languages,
+    queryFn: canSeeInactive ? languagesApi.adminList : languagesApi.list,
+  });
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search);
@@ -276,7 +282,7 @@ export function LanguagesPage() {
           open={!!pendingDelete}
           onOpenChange={(open) => !open && setPendingDelete(null)}
           title={`Delete "${pendingDelete.name}"?`}
-          description="This action cannot be undone. Any translations already recorded for this language will be orphaned."
+          description="This permanently removes the language. It will be rejected if any translations still reference it — deactivate it instead (edit → Active off) to hide it from end users while keeping its data."
           confirmLabel="Delete"
           variant="destructive"
           onConfirm={() => deleteMutation.mutateAsync(pendingDelete.id)}
