@@ -1,5 +1,9 @@
 import { httpClient } from "./client";
-import type { SubmissionReviewRequest, TranslationSubmission } from "@/types/api";
+import type {
+  SubmissionApproveResponse,
+  SubmissionReviewRequest,
+  TranslationSubmission,
+} from "@/types/api";
 
 export const submissionsApi = {
   /** Only the PENDING queue is exposed to admins/reviewers — there is no "all submissions"
@@ -12,8 +16,10 @@ export const submissionsApi = {
     const res = await httpClient.get<TranslationSubmission>(`/api/v1/admin/submissions/${id}`);
     return res.data;
   },
-  async approve(id: string, payload: SubmissionReviewRequest): Promise<TranslationSubmission> {
-    const res = await httpClient.post<TranslationSubmission>(
+  /** The approve endpoint returns an envelope, not the bare submission — the reviewed
+   *  submission is on `.submission`, plus `conceptId` and a `translationsSaved` list. */
+  async approve(id: string, payload: SubmissionReviewRequest): Promise<SubmissionApproveResponse> {
+    const res = await httpClient.post<SubmissionApproveResponse>(
       `/api/v1/admin/submissions/${id}/approve`,
       payload,
     );

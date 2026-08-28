@@ -81,15 +81,46 @@ export function TranslationsPage() {
     defaultValues: { conceptId: "", languageId: "", text: "", pronunciation: "", notes: "" },
   });
 
-  const filtered = useMemo(() => {
-    if (!debouncedSearch.trim()) return translationsQuery.data ?? [];
-    const q = debouncedSearch.toLowerCase();
-    return (translationsQuery.data ?? []).filter(
-      (t) => t.text.toLowerCase().includes(q) || t.conceptName.toLowerCase().includes(q),
-    );
-  }, [translationsQuery.data, debouncedSearch]);
+  const trimmedSearch = debouncedSearch.trim();
 
-  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
+  const localFiltered = useMemo(() => {
+    if (!trimmedSearch) return translationsQuery.data ?? [];
+    const q = trimmedSearch.toLowerCase();
+    return (translationsQuery.data ?? []).filter(
+      (t) =>
+        t.text.toLowerCase().includes(q) ||
+        t.conceptName.toLowerCase().includes(q) ||
+        (t.pronunciation?.toLowerCase().includes(q) ?? false),
+    );
+  }, [translationsQuery.data, trimmedSearch]);
+
+  // When the already-fetched page has no match for the query, fall back to the backend's
+  // search endpoint (Unicode-normalized, also matches pronunciation + concept name) rather
+  // than fetching and caching the entire dictionary just to filter it client-side.
+  const needsServerSearch =
+    !!trimmedSearch && !translationsQuery.isLoading && localFiltered.length === 0;
+  const searchTargetLanguageId = languageFilter === "ALL" ? undefined : languageFilter;
+
+  const searchQuery = useQuery({
+    queryKey: queryKeys.translationsSearch(trimmedSearch, searchTargetLanguageId),
+    queryFn: () =>
+      translationsApi.search({ query: trimmedSearch, targetLanguageId: searchTargetLanguageId }),
+    enabled: needsServerSearch,
+    staleTime: 60_000,
+  });
+
+  const usingServerSearch = needsServerSearch && (searchQuery.data?.length ?? 0) > 0;
+
+  const rows = useMemo(() => {
+    if (!usingServerSearch) return localFiltered;
+    const byId = new Map((translationsQuery.data ?? []).map((t) => [t.id, t]));
+    let result = (searchQuery.data ?? []).map((t) => byId.get(t.id) ?? t);
+    // The search endpoint filters by language, not concept — keep the concept filter honoured.
+    if (conceptFilter !== "ALL") result = result.filter((t) => t.conceptId === conceptFilter);
+    return result;
+  }, [usingServerSearch, localFiltered, searchQuery.data, translationsQuery.data, conceptFilter]);
+
+  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(rows, 10);
 
   const saveMutation = useMutation({
     mutationFn: (payload: TranslationFormValues) =>
@@ -186,17 +217,36 @@ export function TranslationsPage() {
         </Select>
       </div>
 
+      {usingServerSearch && (
+        <p className="text-xs text-muted-foreground">
+          No match on the loaded page — showing {searchQuery.data?.length ?? 0} result
+          {(searchQuery.data?.length ?? 0) === 1 ? "" : "s"} from a server-side search instead.
+        </p>
+      )}
+      {needsServerSearch && searchQuery.error && (
+        <p className="text-xs text-destructive">
+          {searchQuery.error instanceof ApiError ? searchQuery.error.message : "Server search failed."}
+        </p>
+      )}
+
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          {translationsQuery.isLoading ? (
+          {translationsQuery.isLoading || (needsServerSearch && searchQuery.isFetching && !searchQuery.data) ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : rows.length === 0 ? (
             <div className="p-4">
-              <EmptyState title="No translations found" description="Try a different search or filter combination." />
+              <EmptyState
+                title="No translations found"
+                description={
+                  trimmedSearch
+                    ? "Nothing matched this search on the loaded page or on the server."
+                    : "Try a different filter combination."
+                }
+              />
             </div>
           ) : (
             <>

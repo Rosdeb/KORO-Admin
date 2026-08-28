@@ -29,7 +29,7 @@ import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
 import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import type { TranslationSubmission } from "@/types/api";
+import type { SubmissionApproveResponse, TranslationSubmission } from "@/types/api";
 
 type ReviewAction = "view" | "approve" | "reject";
 
@@ -62,26 +62,27 @@ export function SubmissionsQueuePage() {
 
   const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
 
-  const reviewMutation = useMutation({
-    mutationFn: ({
-      id,
-      action,
-      note,
-      reason,
-    }: {
-      id: string;
-      action: Exclude<ReviewAction, "view">;
-      note: string;
-      reason: string;
-    }) =>
+  const reviewMutation = useMutation<
+    SubmissionApproveResponse | TranslationSubmission,
+    unknown,
+    { id: string; action: Exclude<ReviewAction, "view">; note: string; reason: string }
+  >({
+    mutationFn: ({ id, action, note, reason }) =>
       action === "approve"
         ? submissionsApi.approve(id, { reviewerNote: note || undefined })
         : submissionsApi.reject(id, { reviewerNote: note || undefined, rejectionReason: reason }),
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
       queryClient.setQueryData<TranslationSubmission[]>(queryKeys.pendingSubmissions, (prev) =>
         prev?.filter((s) => s.id !== variables.id),
       );
-      toast.success(variables.action === "approve" ? "Submission approved and published." : "Submission rejected.");
+      if (variables.action === "approve" && "translationsSaved" in result) {
+        const count = result.translationsSaved.length;
+        toast.success(`Submission approved — ${count} dictionary ${count === 1 ? "entry" : "entries"} created.`, {
+          description: result.translationsSaved.join(" · "),
+        });
+      } else {
+        toast.success("Submission rejected.");
+      }
       closeDialog();
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to review submission"),

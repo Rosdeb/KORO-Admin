@@ -1,5 +1,10 @@
 # Koro — REST API Documentation
 
+> **Canonical source: the repo-root `api_doc` file.** That copy is kept current with the
+> backend; this one is a historical duplicate. Where they disagree, `api_doc` wins —
+> notably the collections / "My Books" (§5) and PDF export (§8) sections, which gained
+> item/chapter/bulk endpoints and switched to trimmed response DTOs.
+
 This document lists **every** REST API endpoint in the **Koro Multilingual & Indigenous Language Platform**, including which role(s) can call it.
 
 ---
@@ -49,9 +54,10 @@ All protected endpoints require a `Bearer <JWT_TOKEN>` in the `Authorization` he
 | `/api/v1/concepts`, `/concepts/{id}` | GET | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/v1/translations` | GET | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/v1/translations/search` | POST | | ✅ | ✅ | ✅ | ✅ |
-| `/api/v1/collections/**` | GET/POST/PUT/DELETE | | ✅ own | ✅ own | ✅ own | ✅ own |
+| `/api/v1/collections/**` | GET/POST/PUT/PATCH/DELETE | | ✅ own | ✅ own | ✅ own | ✅ own |
 | `/api/v1/images/recognize`, `/images/history`, `/images/files/{name}` | POST/GET | | ✅ | ✅ | ✅ | ✅ |
-| `/api/v1/export/pdf`, `/export/history`, `/export/{id}`, `/export/files/{name}` | POST/GET | | ✅ own | ✅ own | ✅ own | ✅ own |
+| `/api/v1/export/pdf`, `/export/history`, `/export/{id}` | POST/GET | | ✅ own | ✅ own | ✅ own | ✅ own |
+| `/api/v1/export/files/{name}` | GET | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/v1/submissions` | GET / POST | | ✅ | ✅ | ✅ | ✅ |
 | `/api/v1/activity`, `/activity/statistics` | GET | | ✅ own | ✅ own | ✅ own | ✅ own |
 | `/api/v1/admin/submissions/pending` | GET | | | ✅ | ✅ | ✅ |
@@ -209,11 +215,15 @@ All protected endpoints require a `Bearer <JWT_TOKEN>` in the `Authorization` he
 
 ---
 
-## 5. Saved Vocabulary Collections (`/api/v1/collections`)
+## 5. Saved Vocabulary Collections / "My Books" (`/api/v1/collections`)
 
-*   **URLs**: `/api/v1/collections`, `/api/v1/collections/{id}`, `/api/v1/collections/{id}/items`, `/api/v1/collections/{id}/items/{itemId}`
-*   **Methods**: `GET`, `POST`, `PUT`, `DELETE`
-*   **Access**: Authenticated, owner-only (a user can only read/modify their own collections — enforced in the controller, not just by role)
+*   **Access**: Authenticated, owner-only (enforced in the controller, not just by role)
+*   **See `api_doc` §5 for the full endpoint table.** In short: `GET /collections` returns
+    `CollectionSummaryResponse[]` (with `itemCount` / `chapterCount`); `GET /collections/{id}`
+    returns `CollectionResponse` (ordered `items[]` + `chapterOrder`); create/update return
+    `CollectionResponse` (the raw entity, which leaked the owner password hash, is gone).
+    Item editing: `PATCH /{id}/items/{itemId}`, `POST /{id}/items/bulk`,
+    `PUT /{id}/chapters` (bulk rename + reorder). Duplicate add → `409`.
 
 ---
 
@@ -292,7 +302,8 @@ A submission is a full dictionary entry — a word in its **source language**, p
 ## 8. PDF Generation API (`/api/v1/export`)
 
 *   **URLs**: `/api/v1/export/pdf` (`POST`), `/api/v1/export/history` (`GET`), `/api/v1/export/{id}` (`GET`, owner-only), `/api/v1/export/files/{filename}` (`GET`)
-*   **Access**: Authenticated (any role)
+*   **Access**: Authenticated, **except `GET /files/{filename}` which is public** (unguessable UUID → shareable "published book" link; served `inline`, add `?download=1` to force a save).
+*   `POST /pdf` body takes `languageIds[]` (one printed column per language, in order), plus legacy `languageId`, optional `headwordLanguageId` and `includeExampleSentences`. Responses (`POST /pdf`, `GET /history`, `GET /{id}`) are `PdfExportResponse` — `{ id, collectionId, collectionName, fileName, fileUrl, fileSize, createdAt }`, no nested `user`. See `api_doc` §8.
 
 ---
 

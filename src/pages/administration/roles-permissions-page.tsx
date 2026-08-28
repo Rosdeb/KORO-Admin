@@ -40,7 +40,10 @@ const ROLES: { role: Role; who: string; scope: string; icon: LucideIcon }[] = [
 const MATRIX: { endpoint: string; method: string; user: boolean; reviewer: boolean; moderator: boolean; admin: boolean }[] = [
   { endpoint: "/api/v1/languages, /categories, /concepts, /translations", method: "GET", user: true, reviewer: true, moderator: true, admin: true },
   { endpoint: "/api/v1/translations/search", method: "POST", user: true, reviewer: true, moderator: true, admin: true },
-  { endpoint: "/api/v1/collections/**", method: "GET/POST/PUT/DELETE (own)", user: true, reviewer: true, moderator: true, admin: true },
+  { endpoint: "/api/v1/collections/**", method: "GET/POST/PUT/PATCH/DELETE (own)", user: true, reviewer: true, moderator: true, admin: true },
+  { endpoint: "/api/v1/images/recognize, /history, /files/{name}", method: "POST/GET", user: true, reviewer: true, moderator: true, admin: true },
+  { endpoint: "/api/v1/export/pdf, /history, /{id}", method: "POST/GET (own)", user: true, reviewer: true, moderator: true, admin: true },
+  { endpoint: "/api/v1/export/files/{name}", method: "GET (public link)", user: true, reviewer: true, moderator: true, admin: true },
   { endpoint: "/api/v1/submissions", method: "GET/POST", user: true, reviewer: true, moderator: true, admin: true },
   {
     endpoint: "/api/v1/admin/submissions/pending, /{id}, /history",

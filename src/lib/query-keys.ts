@@ -9,5 +9,7 @@ export const queryKeys = {
   concepts: (categoryId?: string) => ["concepts", categoryId ?? "all"] as const,
   translations: (params?: { conceptId?: string; languageId?: string }) =>
     ["translations", params?.conceptId ?? "all", params?.languageId ?? "all"] as const,
+  translationsSearch: (query: string, targetLanguageId?: string) =>
+    ["translations", "search", query, targetLanguageId ?? "all"] as const,
   pendingSubmissions: ["submissions", "pending"] as const,
 };

@@ -60,6 +60,26 @@ export interface TranslationResponse {
   pronunciation: string | null;
   verified: boolean;
   notes: string | null;
+  exampleSentence?: string | null;
+}
+
+/**
+ * Body for `POST /api/v1/translations/search` (authenticated, any role — see api_doc §4).
+ * The backend Unicode-normalizes `query` (NFC, zero-width joiners stripped) and matches it
+ * case-insensitively, as a substring, against the translation `text`, its `pronunciation`
+ * and the parent concept's `name`/`description`, then de-duplicates by id. The response is
+ * the same `TranslationResponse[]` shape the list endpoint returns — no fields are dropped.
+ *
+ * | sourceLanguageId | targetLanguageId | behaviour |
+ * |---|---|---|
+ * | set | set | match in the source language, return the concepts' entries in the target language |
+ * | —   | set | search inside the target language only |
+ * | —   | —   | global search across every language |
+ */
+export interface TranslationSearchRequest {
+  query: string;
+  sourceLanguageId?: string;
+  targetLanguageId?: string;
 }
 
 /**
@@ -103,21 +123,74 @@ export interface ActivityLog {
   createdAt: string;
 }
 
-export interface Collection {
+/**
+ * "My Books" (saved vocabulary collections) and PDF export are **owner-scoped end-user
+ * features** — the admin panel has no UI for them and the API gives admins no way to read
+ * other users' books (see "Endpoints intentionally not surfaced" in docs/API_MAPPING.md).
+ * These types are kept only for schema parity and are transcribed from the backend feature
+ * changelog; reconcile against /v3/api-docs before building any consuming UI.
+ *
+ * Note: `GET/POST/PUT /api/v1/collections` and the export endpoints used to return the raw
+ * JPA entities, which embedded the owner `User` (including its bcrypt password hash). They
+ * now return the trimmed DTOs below — no `user` field.
+ */
+export interface CollectionSummaryResponse {
   id: string;
-  user: UserResponse;
   name: string;
   description: string | null;
+  /** Number of saved words in the book. */
+  itemCount: number;
+  /** Number of distinct chapters. */
+  chapterCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface PdfExport {
+/** Returned by `GET /api/v1/collections/{id}` and by create/update (with `items: []`). */
+export interface CollectionResponse {
   id: string;
-  user: UserResponse;
-  collection: Collection;
-  fileUrl: string;
+  name: string;
+  description: string | null;
+  /** Author-defined chapter order; `null` means "order chapters by name". */
+  chapterOrder: string[] | null;
+  createdAt: string;
+  updatedAt: string;
+  items: CollectionItemResponse[];
+}
+
+export interface CollectionItemResponse {
+  id: string;
+  conceptId: string;
+  conceptName: string;
+  categoryName: string;
+  languageId: string;
+  languageName: string;
+  /** The saved translation's text (named `translationText`, not `text`, in this DTO). */
+  translationText: string;
+  pronunciation: string | null;
+  exampleSentence: string | null;
+  notes: string | null;
+  /** Chapter this word sits in; defaults to `"General"`. */
+  chapter: string;
+  /** Position within the chapter (single-add now defaults to end-of-chapter, not 0). */
+  displayOrder: number;
+  createdAt: string;
+}
+
+/** Returned by `POST /api/v1/collections/{id}/items/bulk` — always `200`. */
+export interface CollectionItemsBulkResponse {
+  added: CollectionItemResponse[];
+  skipped: { conceptId: string; reason: string }[];
+}
+
+/** Returned by `GET /api/v1/export/history` (list), `GET /api/v1/export/{id}` and `POST /api/v1/export/pdf`. */
+export interface PdfExportResponse {
+  id: string;
+  collectionId: string;
+  collectionName: string;
   fileName: string;
+  /** e.g. `/api/v1/export/files/<uuid>.pdf` — public (unguessable UUID), shareable link. */
+  fileUrl: string;
   fileSize: number;
   createdAt: string;
 }
@@ -188,6 +261,20 @@ export interface SubmissionReviewRequest {
 }
 
 /**
+ * Response envelope from `POST /api/v1/admin/submissions/{id}/approve`.
+ * The approve endpoint no longer returns the bare submission — it wraps the reviewed
+ * submission alongside the concept it was filed under and a human-readable list of the
+ * dictionary rows that were created (source word, Bangla, English). The reject endpoint
+ * still returns the bare `TranslationSubmission`.
+ */
+export interface SubmissionApproveResponse {
+  submission: TranslationSubmission;
+  conceptId: string;
+  /** e.g. `["Chakma: বান", "Bangla: গাছ", "English: Tree"]` — safe to show as a toast. */
+  translationsSaved: string[];
+}
+
+/**
  * Body for `POST /api/v1/submissions` (end-user "submit a word" flow — see
  * "Endpoints intentionally not surfaced" in docs/API_MAPPING.md; kept here for type
  * parity with the live schema even though the admin panel doesn't create submissions).
@@ -201,6 +288,44 @@ export interface SubmissionRequest {
   pronunciation?: string;
   exampleSentence?: string;
   note?: string;
+}
+
+/**
+ * "My Books" / PDF export request bodies — parity only, no consuming UI in the admin panel
+ * (see the response types above and "Endpoints intentionally not surfaced" in docs/API_MAPPING.md).
+ */
+export interface CollectionItemBulkRequest {
+  languageId: string;
+  conceptIds: string[];
+  chapter?: string;
+  notes?: string;
+}
+
+export interface CollectionItemPatchRequest {
+  /** `""` resets to `"General"`. */
+  chapter?: string;
+  displayOrder?: number;
+  /** `""` clears the note. */
+  notes?: string;
+  /** `409` if the book already has this concept in the target language. */
+  languageId?: string;
+}
+
+/** `to` omitted → keep the name, just take this position. List order becomes the book's chapter order. */
+export interface CollectionChaptersRequest {
+  chapters: { from: string; to?: string }[];
+}
+
+export interface PdfExportRequest {
+  collectionId: string;
+  /** One printed column per language, in this order. At least one of `languageIds`/`languageId` is required. */
+  languageIds?: string[];
+  /** Legacy single-language alias, still accepted. */
+  languageId?: string;
+  /** Language that leads each entry; defaults to the first of `languageIds`. */
+  headwordLanguageId?: string;
+  /** Default `true`. */
+  includeExampleSentences?: boolean;
 }
 
 /** Generic error envelope returned by the backend's default exception handler. */

@@ -56,6 +56,12 @@ single "analytics" endpoint exists, so the frontend aggregates client-side
 | Concepts | `GET /api/v1/concepts?categoryId=` (public) | `POST /api/v1/admin/concepts` | `PUT /api/v1/admin/concepts/{id}` | `DELETE /api/v1/admin/concepts/{id}` |
 | Translations | `GET /api/v1/translations?conceptId=&languageId=` (public) | `POST /api/v1/admin/translations` | `PUT /api/v1/admin/translations/{id}` | `DELETE /api/v1/admin/translations/{id}` |
 
+The Translations page filters the already-fetched (concept/language-scoped) list client-side.
+When that list has **no match** for the search text it falls back to `POST /api/v1/translations/search`
+`{ query, targetLanguageId? }` (auth, any role — see api_doc §4) instead of fetching the whole
+dictionary. Server-search rows are re-hydrated from the local cache by id where possible so no
+column goes blank; the concept filter is re-applied client-side since the endpoint only scopes by language.
+
 Create requests for Language/Category/Concept post the **entity schema itself**
 (no separate `*Request` DTO exists for these three in the OpenAPI spec) — see
 `src/types/api.ts` (`LanguagePayload`, `CategoryPayload`, `ConceptPayload`).
@@ -80,7 +86,7 @@ endpoint exists.
 | Page | Endpoint | Auth |
 |---|---|---|
 | Submission Queue (list) | `GET /api/v1/admin/submissions/pending` → `TranslationSubmission[]` (`category`, `sourceLanguage`, `sourceWord`, `banglaTranslation`, `englishTranslation`, `pronunciation`, `exampleSentence`, `notes`, `status`, `rejectionReason`, …) | Admin or Reviewer. **Only pending submissions are listable** — no endpoint returns approved/rejected history. |
-| Approve | `POST /api/v1/admin/submissions/{id}/approve` `{ reviewerNote? }` | Admin or Reviewer |
+| Approve | `POST /api/v1/admin/submissions/{id}/approve` `{ reviewerNote? }` → `{ submission: TranslationSubmission, conceptId, translationsSaved: string[] }` (envelope, **not** the bare submission). May return `400` if the source/`bn`/`en` language is no longer configured. | Admin or Reviewer |
 | Reject | `POST /api/v1/admin/submissions/{id}/reject` `{ reviewerNote?, rejectionReason }` — `rejectionReason` is required, `400` if missing/blank | Admin or Reviewer |
 | My Activity | `GET /api/v1/activity?from=&to=` | Any role, but scoped to the caller's own actions | `from`/`to` are `date` (not `date-time`) query params. |
 | My Activity statistics panel | `GET /api/v1/activity/statistics` | Same as above | Also an undocumented-schema `object` — rendered dynamically like `/admin/statistics`. |
@@ -107,10 +113,18 @@ These exist in the API but are end-user (owner-scoped) features, not admin
 functionality, and the API gives admins no way to see other users' data for
 them:
 
-- `/api/v1/collections/**` — a user's saved vocabulary, owner-only.
+- `/api/v1/collections/**` — a user's saved vocabulary / "My Books", owner-only.
+  Responses (`CollectionSummaryResponse`, `CollectionResponse`, `CollectionItemResponse`)
+  and the item/chapter/bulk endpoints are typed in `src/types/api.ts` for schema parity
+  only. `GET /collections` returns summaries with `itemCount` / `chapterCount`; create/update
+  return `CollectionResponse` (the raw entity — which leaked the owner password hash — is
+  no longer returned anywhere).
 - `/api/v1/images/**` — AI vision recognition history, owner-only.
-- `/api/v1/export/**` — PDF export history, owner-only (except `POST /pdf` and
-  file download, which aren't admin actions either).
+- `/api/v1/export/**` — PDF export, owner-only. `POST /pdf`, `GET /history` and `GET /{id}`
+  return `PdfExportResponse` (`id, collectionId, collectionName, fileName, fileUrl,
+  fileSize, createdAt` — no nested `user`). `GET /export/files/{filename}` is **public**:
+  the filename is an unguessable UUID, so `fileUrl` is a shareable "published book" link.
+  None of this is an admin action.
 - `/api/v1/submissions` — `GET` ("my submissions") and `POST` (`SubmissionRequest`:
   `categoryId`, `sourceLanguageId`, `sourceWord`, `banglaTranslation`,
   `englishTranslation` required, `pronunciation`/`exampleSentence`/`note`
