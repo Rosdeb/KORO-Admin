@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
+  Trophy,
   LineChart,
   Users,
   Languages,
@@ -39,6 +40,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Dashboard",
     items: [
       { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ADMIN },
+      { label: "Leaderboard", to: "/leaderboard", icon: Trophy, roles: STAFF },
       { label: "Analytics", to: "/analytics", icon: LineChart, roles: ADMIN },
     ],
   },

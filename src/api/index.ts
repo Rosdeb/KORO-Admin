@@ -8,3 +8,4 @@ export * from "./translations";
 export * from "./submissions";
 export * from "./statistics";
 export * from "./activity";
+export * from "./leaderboard";

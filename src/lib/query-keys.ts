@@ -1,4 +1,7 @@
 export const queryKeys = {
+  leaderboardPublic: (type: string, period: string, limit: number) => ["leaderboard", "public", type, period, limit] as const,
+  leaderboardAdmin: (status?: string, from?: string, to?: string, limit?: number) => ["leaderboard", "admin", status ?? "all", from ?? "", to ?? "", limit ?? 50] as const,
+  leaderboardDetail: (userId: string) => ["leaderboard", "detail", userId] as const,
   adminUsers: ["admin", "users"] as const,
   adminStatistics: ["admin", "statistics"] as const,
   activity: ["activity"] as const,

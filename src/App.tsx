@@ -15,6 +15,7 @@ import { ForbiddenPage } from "@/pages/errors/forbidden-page";
 import { NotFoundPage } from "@/pages/errors/not-found-page";
 
 const OverviewPage = lazy(() => import("@/pages/dashboard/overview-page").then((m) => ({ default: m.OverviewPage })));
+const LeaderboardPage = lazy(() => import("@/pages/dashboard/leaderboard-page").then((m) => ({ default: m.LeaderboardPage })));
 const AnalyticsPage = lazy(() => import("@/pages/analytics/analytics-page").then((m) => ({ default: m.AnalyticsPage })));
 const UsersListPage = lazy(() => import("@/pages/users/users-list-page").then((m) => ({ default: m.UsersListPage })));
 const UserDetailsPage = lazy(() => import("@/pages/users/user-details-page").then((m) => ({ default: m.UserDetailsPage })));
@@ -90,6 +91,7 @@ export default function App() {
                     </Route>
 
                     <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR"]} />}>
+                      <Route path="leaderboard" element={<LeaderboardPage />} />
                       <Route path="content/languages" element={<LanguagesPage />} />
                       <Route path="content/categories" element={<CategoriesPage />} />
                       <Route path="content/concepts" element={<ConceptsPage />} />
