@@ -315,7 +315,7 @@ export function TranslationsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="conceptId">Concept</Label>
                 <Select value={form.watch("conceptId")} onValueChange={(v) => form.setValue("conceptId", v, { shouldValidate: true })}>

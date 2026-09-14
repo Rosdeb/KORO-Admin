@@ -4,7 +4,7 @@ import { Topbar } from "./topbar";
 
 export function AppLayout() {
   return (
-    <div className="flex min-h-dvh">
+    <div className="flex min-h-dvh min-w-0">
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="fixed h-dvh w-64">
           <SidebarContent />
@@ -13,8 +13,8 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 px-4 py-4 sm:px-5 lg:px-6">
-          <div className="mx-auto max-w-[1400px]">
+        <main className="min-w-0 flex-1 px-3 py-4 sm:px-5 lg:px-6">
+          <div className="mx-auto min-w-0 max-w-[1400px]">
             <Outlet />
           </div>
         </main>

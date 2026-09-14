@@ -225,7 +225,7 @@ export function LanguagesPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" placeholder="Bangla" {...form.register("name")} />
@@ -239,7 +239,7 @@ export function LanguagesPage() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="code">Code</Label>
                 <Input id="code" placeholder="bn" {...form.register("code")} />

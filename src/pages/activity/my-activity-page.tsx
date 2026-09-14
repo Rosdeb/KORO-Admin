@@ -271,11 +271,11 @@ export function MyActivityPage() {
           <p className="text-xs text-muted-foreground">Your own actions on the platform — logins, reviews, edits.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           {statsQuery.isLoading ? (
             <Skeleton className="h-9 w-64 rounded-lg" />
           ) : statsQuery.data && Object.keys(statsQuery.data).length > 0 ? (
-            <div className="flex items-center gap-2 overflow-x-auto rounded-lg border bg-slate-50/50 p-1">
+            <div className="flex max-w-full items-center gap-2 overflow-x-auto rounded-lg border bg-slate-50/50 p-1">
               {Object.entries(statsQuery.data).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-1.5 px-2.5 py-1 text-xs">
                   <span className="text-muted-foreground whitespace-nowrap">{humanizeKey(key)}:</span>
@@ -301,15 +301,15 @@ export function MyActivityPage() {
       <Card className="shadow-sm">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <div className="flex-1 min-w-[240px]">
+            <div className="min-w-0 flex-1">
               <SearchInput 
                 value={search} 
                 onChange={setSearch} 
                 placeholder="Search activity type or description…" 
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-slate-50 border rounded-lg px-2.5 py-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-slate-50 px-2.5 py-1.5 sm:flex-none">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Label htmlFor="from" className="text-xs font-medium text-muted-foreground">From</Label>
                 <Input 
@@ -317,10 +317,10 @@ export function MyActivityPage() {
                   type="date" 
                   value={from} 
                   onChange={(e) => setFrom(e.target.value)}
-                  className="h-7 text-xs border-0 bg-transparent p-0 focus-visible:ring-0 w-auto" 
+                  className="h-7 min-w-0 w-full border-0 bg-transparent p-0 text-xs focus-visible:ring-0 sm:w-auto" 
                 />
               </div>
-              <div className="flex items-center gap-1.5 bg-slate-50 border rounded-lg px-2.5 py-1.5">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-slate-50 px-2.5 py-1.5 sm:flex-none">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Label htmlFor="to" className="text-xs font-medium text-muted-foreground">To</Label>
                 <Input 
@@ -328,7 +328,7 @@ export function MyActivityPage() {
                   type="date" 
                   value={to} 
                   onChange={(e) => setTo(e.target.value)}
-                  className="h-7 text-xs border-0 bg-transparent p-0 focus-visible:ring-0 w-auto" 
+                  className="h-7 min-w-0 w-full border-0 bg-transparent p-0 text-xs focus-visible:ring-0 sm:w-auto" 
                 />
               </div>
               {(from || to || selectedType || search) && (

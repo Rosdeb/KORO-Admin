@@ -30,8 +30,8 @@ export function ChartCard({
 }: ChartCardProps) {
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between space-y-0">
-        <div>
+      <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription className="mt-1">{description}</CardDescription>}
         </div>

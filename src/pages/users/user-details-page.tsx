@@ -128,7 +128,7 @@ export function UserDetailsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex min-w-0 items-center gap-2 break-all text-muted-foreground">
               <Mail className="size-3.5" /> {user.email}
             </div>
             <div className="flex items-center justify-between">

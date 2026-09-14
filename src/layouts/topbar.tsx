@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, Moon, Sun, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function Topbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
@@ -29,14 +31,14 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <Sheet>
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open navigation menu">
             <Menu className="size-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-72">
-          <SidebarContent />
+        <SheetContent side="left" className="w-[min(18rem,calc(100vw-2rem))] p-0">
+          <SidebarContent onNavigate={() => setMenuOpen(false)} />
         </SheetContent>
       </Sheet>
 
