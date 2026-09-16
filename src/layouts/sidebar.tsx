@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import type { Role } from "@/types/api";
 
 function panelLabel(hasRole: (...roles: Role[]) => boolean): string {
-  if (hasRole("ROLE_ADMIN")) return "Koro Admin";
-  if (hasRole("ROLE_MODERATOR")) return "Koro Moderator";
-  if (hasRole("ROLE_LANGUAGE_REVIEWER")) return "Koro Reviewer";
-  return "Koro Admin";
+  if (hasRole("ROLE_ADMIN")) return "Korot Admin";
+  if (hasRole("ROLE_MODERATOR")) return "Korot Moderator";
+  if (hasRole("ROLE_LANGUAGE_REVIEWER")) return "Korot Reviewer";
+  return "Korot Admin";
 }
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

@@ -71,7 +71,7 @@ export function LoginPage() {
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Globe2 className="size-5" />
           </div>
-          <h1 className="text-lg font-semibold">Koro Admin/Moderator Panel</h1>
+          <h1 className="text-lg font-semibold">Korot Admin Panel</h1>
           <p className="text-sm text-muted-foreground">Sign in with your administrator or moderator account</p>
         </div>
 

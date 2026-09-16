@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">Korot logo</title>
+  <desc id="desc">Korot brand mark and wordmark in teal and gold.</desc>
+  <defs>
+    <linearGradient id="teal" x1="0" x2="1">
+      <stop offset="0%" stop-color="#0B5D5A" />
+      <stop offset="100%" stop-color="#0D7A6E" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0%" stop-color="#F5C84D" />
+      <stop offset="100%" stop-color="#F3A800" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(18,18)">
+    <path d="M110 255 L110 26 L182 26 L182 124 L265 26 L332 26 L240 151 L336 255 L265 255 L184 180 L182 255 Z" fill="url(#teal)"/>
+    <path d="M36 255 L36 26 L106 26 L106 255 Z" fill="url(#teal)" opacity="0.95"/>
+
+    <path d="M105 120 L192 120 L275 26 L342 26 L250 148 L339 255 L274 255 L192 172 L105 172 Z" fill="url(#gold)" opacity="0.9"/>
+
+    <path d="M230 92 L286 92 L360 26 L420 26 L324 126 L435 255 L368 255 L286 170 L230 170 Z" fill="url(#teal)" opacity="0.95"/>
+
+    <path d="M199 224 L328 224 L414 257 L320 292 L199 292 Z" fill="url(#gold)" opacity="0.86"/>
+    <path d="M394 317 L477 256 L477 91 L394 151 Z" fill="url(#teal)" opacity="0.98"/>
+  </g>
+
+  <g transform="translate(490 36)">
+    <text x="0" y="180" font-size="170" font-weight="800" letter-spacing="-10" fill="#0B5D5A" font-family="Segoe UI, Arial, sans-serif">KOROT</text>
+  </g>
+</svg>
