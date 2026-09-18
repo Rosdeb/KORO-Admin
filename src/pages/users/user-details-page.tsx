@@ -230,11 +230,11 @@ export function UserDetailsPage() {
             </div>
           ) : activityQuery.error ? (
             <ErrorState error={activityQuery.error} onRetry={() => activityQuery.refetch()} />
-          ) : (activityQuery.data?.length ?? 0) === 0 ? (
+          ) : (activityQuery.data?.totalElements ?? 0) === 0 ? (
             <EmptyState title="No activity recorded" description="Actions you take will appear here." />
           ) : (
             <ol className="space-y-3 border-l border-border pl-4">
-              {activityQuery.data!.slice(0, 20).map((log) => (
+              {activityQuery.data!.content.slice(0, 20).map((log) => (
                 <li key={log.id} className="relative text-sm">
                   <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-primary" />
                   <p className="font-medium">{log.description ?? log.activityType}</p>

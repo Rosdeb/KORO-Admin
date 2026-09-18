@@ -184,7 +184,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { activityApi, statisticsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
-import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { humanizeKey, formatNumber } from "@/lib/utils";
 import { countByKey } from "@/lib/analytics";
@@ -229,10 +228,18 @@ export function MyActivityPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: [...queryKeys.activity, from, to],
-    queryFn: () => activityApi.list({ from: from || undefined, to: to || undefined }),
+    queryKey: [...queryKeys.activity, from, to, page - 1, pageSize],
+    queryFn: () =>
+      activityApi.list({
+        from: from || undefined,
+        to: to || undefined,
+        page: page - 1,
+        size: pageSize,
+      }),
   });
   const statsQuery = useQuery({ queryKey: queryKeys.activityStatistics, queryFn: statisticsApi.activity });
 
@@ -240,7 +247,7 @@ export function MyActivityPage() {
   const debouncedSearch = useDebouncedValue(search);
 
   const filtered = useMemo(() => {
-    let list = data ?? [];
+    let list = data?.content ?? [];
 
     if (selectedType) {
       list = list.filter((a) => a.activityType.toLowerCase() === selectedType.toLowerCase());
@@ -256,9 +263,7 @@ export function MyActivityPage() {
     return list;
   }, [data, debouncedSearch, selectedType]);
 
-  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 15);
-
-  const byType = useMemo(() => countByKey(data ?? [], (a) => a.activityType), [data]);
+  const byType = useMemo(() => countByKey(data?.content ?? [], (a) => a.activityType), [data]);
 
   if (error) return <ErrorState error={error} onRetry={() => refetch()} className="mt-10" />;
 
@@ -316,7 +321,10 @@ export function MyActivityPage() {
                   id="from" 
                   type="date" 
                   value={from} 
-                  onChange={(e) => setFrom(e.target.value)}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                    setPage(1);
+                  }}
                   className="h-7 min-w-0 w-full border-0 bg-transparent p-0 text-xs focus-visible:ring-0 sm:w-auto" 
                 />
               </div>
@@ -327,7 +335,10 @@ export function MyActivityPage() {
                   id="to" 
                   type="date" 
                   value={to} 
-                  onChange={(e) => setTo(e.target.value)}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                    setPage(1);
+                  }}
                   className="h-7 min-w-0 w-full border-0 bg-transparent p-0 text-xs focus-visible:ring-0 sm:w-auto" 
                 />
               </div>
@@ -338,6 +349,7 @@ export function MyActivityPage() {
                     setTo("");
                     setSelectedType(null);
                     setSearch("");
+                    setPage(1);
                   }}
                   className="text-xs text-slate-500 hover:text-slate-800 underline px-2 py-1"
                 >
@@ -355,7 +367,10 @@ export function MyActivityPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setSelectedType(null)}
+                  onClick={() => {
+                    setSelectedType(null);
+                    setPage(1);
+                  }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                     selectedType === null
                       ? "bg-slate-900 text-white border-slate-900"
@@ -369,7 +384,10 @@ export function MyActivityPage() {
                   return (
                     <button
                       key={t.name}
-                      onClick={() => setSelectedType(isSelected ? null : t.name)}
+                      onClick={() => {
+                        setSelectedType(isSelected ? null : t.name);
+                        setPage(1);
+                      }}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                         isSelected
                           ? "bg-slate-900 text-white border-slate-900"
@@ -418,7 +436,7 @@ export function MyActivityPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageItems.map((log) => {
+                  {filtered.map((log) => {
                     const deviceMeta = parseDevice(log.device);
                     const DeviceIcon = deviceMeta.icon;
 
@@ -459,7 +477,16 @@ export function MyActivityPage() {
                 </TableBody>
               </Table>
               <div className="border-t border-border p-3 bg-slate-50/30">
-                <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} />
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={data?.totalElements ?? 0}
+                  onPageChange={setPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                />
               </div>
             </>
           )}

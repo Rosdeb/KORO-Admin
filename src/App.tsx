@@ -84,18 +84,21 @@ export default function App() {
                       <Route path="analytics" element={<AnalyticsPage />} />
                       <Route path="users" element={<UsersListPage />} />
                       <Route path="users/:id" element={<UserDetailsPage />} />
+                      <Route path="content/categories" element={<CategoriesPage />} />
                       <Route path="reports" element={<ReportsPage />} />
                       <Route path="administration/admin-users" element={<AdminUsersPage />} />
                       <Route path="administration/roles-permissions" element={<RolesPermissionsPage />} />
                       <Route path="administration/settings" element={<SettingsPage />} />
                     </Route>
 
-                    <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR"]} />}>
+                    <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_MODERATOR"]} />}>
                       <Route path="leaderboard" element={<LeaderboardPage />} />
                       <Route path="content/languages" element={<LanguagesPage />} />
-                      <Route path="content/categories" element={<CategoriesPage />} />
                       <Route path="content/concepts" element={<ConceptsPage />} />
                       <Route path="content/translations" element={<TranslationsPage />} />
+                    </Route>
+
+                    <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_MODERATOR", "ROLE_LANGUAGE_REVIEWER"]} />}>
                       <Route path="submissions" element={<SubmissionsQueuePage />} />
                       <Route path="activity" element={<MyActivityPage />} />
                     </Route>

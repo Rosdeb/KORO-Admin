@@ -1,10 +1,16 @@
 import { httpClient } from "./client";
-import type { Concept, ConceptPayload } from "@/types/api";
+import type { Concept, ConceptPayload, PageResponse } from "@/types/api";
+
+interface ConceptListParams {
+  categoryId?: string;
+  page?: number;
+  size?: number;
+}
 
 export const conceptsApi = {
-  async list(categoryId?: string): Promise<Concept[]> {
-    const res = await httpClient.get<Concept[]>("/api/v1/concepts", {
-      params: categoryId ? { categoryId } : undefined,
+  async list(params?: ConceptListParams): Promise<PageResponse<Concept>> {
+    const res = await httpClient.get<PageResponse<Concept>>("/api/v1/concepts", {
+      params,
     });
     return res.data;
   },

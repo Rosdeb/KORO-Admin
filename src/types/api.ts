@@ -9,6 +9,16 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface UserResponse {
   id: string;
   name: string;
@@ -45,7 +55,9 @@ export interface Concept {
   id: string;
   name: string;
   description: string | null;
-  category: Category | null;
+  category?: Category | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
   referenceImage: string | null;
 }
 
@@ -93,19 +105,19 @@ export interface TranslationSearchRequest {
  */
 export interface TranslationSubmission {
   id: string;
-  category: Category;
-  sourceLanguage: Language;
+  category?: Category;
+  sourceLanguage?: Language;
   sourceWord: string;
   banglaTranslation: string;
   englishTranslation: string;
   pronunciation: string | null;
   exampleSentence: string | null;
   notes: string | null;
-  submittedBy: UserResponse;
+  submittedBy?: UserResponse;
   status: SubmissionStatus | string;
   reviewerNote: string | null;
   rejectionReason: string | null;
-  reviewedBy: UserResponse | null;
+  reviewedBy?: UserResponse | null;
   createdAt: string;
   updatedAt: string;
   reviewedAt: string | null;
@@ -272,6 +284,13 @@ export interface SubmissionApproveResponse {
   conceptId: string;
   /** e.g. `["Chakma: বান", "Bangla: গাছ", "English: Tree"]` — safe to show as a toast. */
   translationsSaved: string[];
+}
+
+export interface SubmissionApproveAllResponse {
+  approvedCount: number;
+  approvedIds: string[];
+  message: string;
+  failed?: string[];
 }
 
 /**

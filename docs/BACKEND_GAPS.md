@@ -126,18 +126,14 @@ Moderator as an assignable role — this gap is closed.
 
 ---
 
-### 6. No pagination, search, filter, or sort query parameters on any list endpoint
+### 6. No pagination, search, filter, or sort query parameters on most list endpoints
 
-**Feature:** Every list-based page (Users, Languages, Categories, Concepts,
-Translations, Submissions, Activity).
+**Feature:** List-based pages other than the submissions and concepts endpoints.
 
-**Current behavior:** Every `GET` list endpoint returns the entire collection
-with no `page`, `size`, `q`, `sort`, or comparable params (confirmed against
-the live OpenAPI spec — none of the list operations declare query
-parameters beyond the few noted in [API_MAPPING.md](./API_MAPPING.md), e.g.
-`categoryId` on Concepts). The admin panel implements pagination, search,
-filtering and sorting entirely client-side after fetching the full list
-(`src/hooks/use-pagination.ts`, `use-debounced-value.ts`).
+**Current behavior:** Most `GET` list endpoints still return the entire
+collection with no `page`, `size`, `q`, `sort`, or comparable params. The
+submissions and concepts endpoints now return paged envelopes and accept
+`page` and `size`; concepts also accepts `categoryId`.
 
 **Why it's needed:** This works fine at seed-data scale but will not scale —
 fetching every user/translation/activity row on every page load becomes a
@@ -146,7 +142,7 @@ contradicts section 21's "do not load thousands of records into the browser"
 guidance, which the current API leaves no way to avoid).
 
 **Required change:** Add `page`, `size`, and ideally `sort`/`q` query params
-to `GET /api/v1/admin/users`, `/api/v1/translations`, `/api/v1/concepts`, and
+to `GET /api/v1/admin/users`, `/api/v1/translations`, and
 `GET /api/v1/activity` at minimum, returning a paged envelope (e.g.
 `{ content, totalElements, totalPages, page, size }`, matching typical Spring
 Data `Page<T>` serialization).

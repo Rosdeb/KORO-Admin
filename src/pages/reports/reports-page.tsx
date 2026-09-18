@@ -34,9 +34,15 @@ export function ReportsPage() {
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
-  const conceptsQuery = useQuery({ queryKey: queryKeys.concepts(), queryFn: () => conceptsApi.list() });
+  const conceptsQuery = useQuery({
+    queryKey: queryKeys.concepts({ page: 0, size: 100 }),
+    queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
+  });
   const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
-  const pendingQuery = useQuery({ queryKey: queryKeys.pendingSubmissions, queryFn: submissionsApi.listPending });
+  const pendingQuery = useQuery({
+    queryKey: queryKeys.pendingSubmissions(0, 100),
+    queryFn: () => submissionsApi.listPending({ page: 0, size: 100 }),
+  });
 
   const anyError =
     usersQuery.error || languagesQuery.error || categoriesQuery.error || conceptsQuery.error || translationsQuery.error || pendingQuery.error;
@@ -46,7 +52,7 @@ export function ReportsPage() {
   const users = usersQuery.data ?? [];
   const growthSeries = bucketByDate(users, (u) => u.createdAt, "week", 12);
   const languageUsage = countByKey(translationsQuery.data ?? [], (t) => t.languageName);
-  const categoryUsage = countByKey(conceptsQuery.data ?? [], (c) => c.category?.name);
+  const categoryUsage = countByKey(conceptsQuery.data?.content ?? [], (c) => c.categoryName ?? c.category?.name);
 
   const summaryRows = useMemo(
     () => [
@@ -56,10 +62,10 @@ export function ReportsPage() {
       { metric: "Total Languages", value: languagesQuery.data?.length ?? 0 },
       { metric: "Active Languages", value: (languagesQuery.data ?? []).filter((l) => l.active).length },
       { metric: "Total Categories", value: categoriesQuery.data?.length ?? 0 },
-      { metric: "Total Concepts", value: conceptsQuery.data?.length ?? 0 },
+      { metric: "Total Concepts", value: conceptsQuery.data?.totalElements ?? 0 },
       { metric: "Total Translations", value: translationsQuery.data?.length ?? 0 },
       { metric: "Verified Translations", value: (translationsQuery.data ?? []).filter((t) => t.verified).length },
-      { metric: "Pending Submissions", value: pendingQuery.data?.length ?? 0 },
+      { metric: "Pending Submissions", value: pendingQuery.data?.totalElements ?? 0 },
     ],
     [users, languagesQuery.data, categoriesQuery.data, conceptsQuery.data, translationsQuery.data, pendingQuery.data],
   );

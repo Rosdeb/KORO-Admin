@@ -1,5 +1,12 @@
 import { httpClient } from "./client";
-import type { ActivityLog } from "@/types/api";
+import type { ActivityLog, PageResponse } from "@/types/api";
+
+interface ActivityListParams {
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+}
 
 export const activityApi = {
   /**
@@ -8,8 +15,8 @@ export const activityApi = {
    * There is no endpoint to list another user's activity or a platform-wide feed —
    * see docs/BACKEND_GAPS.md.
    */
-  async list(range?: { from?: string; to?: string }): Promise<ActivityLog[]> {
-    const res = await httpClient.get<ActivityLog[]>("/api/v1/activity", { params: range });
+  async list(params?: ActivityListParams): Promise<PageResponse<ActivityLog>> {
+    const res = await httpClient.get<PageResponse<ActivityLog>>("/api/v1/activity", { params });
     return res.data;
   },
 };

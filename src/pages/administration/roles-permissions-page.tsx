@@ -54,6 +54,7 @@ const MATRIX: { endpoint: string; method: string; user: boolean; reviewer: boole
     admin: true,
   },
   { endpoint: "/api/v1/admin/submissions/{id}/approve, /reject", method: "POST", user: false, reviewer: true, moderator: true, admin: true },
+  { endpoint: "/api/v1/admin/submissions/approve-all", method: "POST", user: false, reviewer: false, moderator: false, admin: true },
   { endpoint: "/api/v1/admin/concepts/{id}", method: "PUT", user: false, reviewer: false, moderator: true, admin: true },
   { endpoint: "/api/v1/admin/translations/{id}", method: "PUT", user: false, reviewer: false, moderator: true, admin: true },
   { endpoint: "/api/v1/admin/statistics", method: "GET", user: false, reviewer: false, moderator: false, admin: true },

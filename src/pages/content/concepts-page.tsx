@@ -32,7 +32,6 @@ import {
 import { conceptsApi, categoriesApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
-import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/hooks/use-auth";
 import type { Concept } from "@/types/api";
@@ -53,10 +52,21 @@ export function ConceptsPage() {
   const queryClient = useQueryClient();
 
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const conceptsQuery = useQuery({
-    queryKey: queryKeys.concepts(categoryFilter === "ALL" ? undefined : categoryFilter),
-    queryFn: () => conceptsApi.list(categoryFilter === "ALL" ? undefined : categoryFilter),
+    queryKey: queryKeys.concepts({
+      categoryId: categoryFilter === "ALL" ? undefined : categoryFilter,
+      page: page - 1,
+      size: pageSize,
+    }),
+    queryFn: () =>
+      conceptsApi.list({
+        categoryId: categoryFilter === "ALL" ? undefined : categoryFilter,
+        page: page - 1,
+        size: pageSize,
+      }),
   });
 
   const [search, setSearch] = useState("");
@@ -71,12 +81,11 @@ export function ConceptsPage() {
   });
 
   const filtered = useMemo(() => {
-    if (!debouncedSearch.trim()) return conceptsQuery.data ?? [];
+    const concepts = conceptsQuery.data?.content ?? [];
+    if (!debouncedSearch.trim()) return concepts;
     const q = debouncedSearch.toLowerCase();
-    return (conceptsQuery.data ?? []).filter((c) => c.name.toLowerCase().includes(q));
+    return concepts.filter((c) => c.name.toLowerCase().includes(q));
   }, [conceptsQuery.data, debouncedSearch]);
-
-  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
 
   const saveMutation = useMutation({
     mutationFn: (payload: { name: string; description: string | null; category: { id: string } | null; referenceImage: string | null }) =>
@@ -108,7 +117,7 @@ export function ConceptsPage() {
     form.reset({
       name: concept.name,
       description: concept.description ?? "",
-      categoryId: concept.category?.id ?? "",
+      categoryId: concept.categoryId ?? concept.category?.id ?? "",
       referenceImage: concept.referenceImage ?? "",
     });
     setFormOpen(true);
@@ -152,7 +161,13 @@ export function ConceptsPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <SearchInput value={search} onChange={setSearch} placeholder="Search concepts…" className="sm:max-w-xs" />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select
+          value={categoryFilter}
+          onValueChange={(value) => {
+            setCategoryFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="sm:w-48">
             <SelectValue />
           </SelectTrigger>
@@ -191,11 +206,13 @@ export function ConceptsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageItems.map((concept) => (
+                  {filtered.map((concept) => (
                     <TableRow key={concept.id}>
                       <TableCell className="font-medium">{concept.name}</TableCell>
                       <TableCell>
-                        {concept.category ? <Badge variant="outline">{concept.category.name}</Badge> : "—"}
+                        {concept.categoryName || concept.category?.name ? (
+                          <Badge variant="outline">{concept.categoryName ?? concept.category?.name}</Badge>
+                        ) : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{concept.description ?? "—"}</TableCell>
                       {canEdit && (
@@ -222,7 +239,16 @@ export function ConceptsPage() {
                 </TableBody>
               </Table>
               <div className="border-t border-border p-3">
-                <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} />
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={conceptsQuery.data?.totalElements ?? 0}
+                  onPageChange={setPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                />
               </div>
             </>
           )}

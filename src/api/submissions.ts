@@ -1,15 +1,26 @@
 import { httpClient } from "./client";
 import type {
+  SubmissionApproveAllResponse,
   SubmissionApproveResponse,
+  PageResponse,
   SubmissionReviewRequest,
   TranslationSubmission,
 } from "@/types/api";
 
+interface SubmissionPageParams {
+  page?: number;
+  size?: number;
+}
+
 export const submissionsApi = {
   /** Only the PENDING queue is exposed to admins/reviewers — there is no "all submissions"
    *  endpoint, so approved/rejected history cannot be listed. See docs/BACKEND_GAPS.md. */
-  async listPending(): Promise<TranslationSubmission[]> {
-    const res = await httpClient.get<TranslationSubmission[]>("/api/v1/admin/submissions/pending");
+  async listPending(params?: SubmissionPageParams): Promise<PageResponse<TranslationSubmission>> {
+    const res = await httpClient.get<PageResponse<TranslationSubmission>>("/api/v1/admin/submissions/pending", { params });
+    return res.data;
+  },
+  async listMine(params?: SubmissionPageParams): Promise<PageResponse<TranslationSubmission>> {
+    const res = await httpClient.get<PageResponse<TranslationSubmission>>("/api/v1/submissions", { params });
     return res.data;
   },
   async get(id: string): Promise<TranslationSubmission> {
@@ -22,6 +33,13 @@ export const submissionsApi = {
     const res = await httpClient.post<SubmissionApproveResponse>(
       `/api/v1/admin/submissions/${id}/approve`,
       payload,
+    );
+    return res.data;
+  },
+  async approveAll(): Promise<SubmissionApproveAllResponse> {
+    const res = await httpClient.post<SubmissionApproveAllResponse>(
+      "/api/v1/admin/submissions/approve-all",
+      undefined,
     );
     return res.data;
   },

@@ -42,15 +42,21 @@ const tooltipStyle = {
 export function AnalyticsPage() {
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
-  const conceptsQuery = useQuery({ queryKey: queryKeys.concepts(), queryFn: () => conceptsApi.list() });
+  const conceptsQuery = useQuery({
+    queryKey: queryKeys.concepts({ page: 0, size: 100 }),
+    queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
+  });
   const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
-  const pendingQuery = useQuery({ queryKey: queryKeys.pendingSubmissions, queryFn: submissionsApi.listPending });
+  const pendingQuery = useQuery({
+    queryKey: queryKeys.pendingSubmissions(0, 100),
+    queryFn: () => submissionsApi.listPending({ page: 0, size: 100 }),
+  });
 
   const users = usersQuery.data ?? [];
   const languages = languagesQuery.data ?? [];
-  const concepts = conceptsQuery.data ?? [];
+  const concepts = conceptsQuery.data?.content ?? [];
   const translations = translationsQuery.data ?? [];
-  const pending = pendingQuery.data ?? [];
+  const pending = pendingQuery.data?.content ?? [];
 
   const userGrowthSeries = bucketByDate(users, (u) => u.createdAt, "day", 30);
   const submissionSeries = bucketByDate(pending, (s) => s.createdAt, "day", 30);
@@ -62,7 +68,7 @@ export function AnalyticsPage() {
   const nativeLanguageBreakdown = countByKey(users, (u) => u.nativeLanguage).slice(0, 8);
   const preferredLanguageBreakdown = countByKey(users, (u) => u.preferredLanguage).slice(0, 8);
   const translationsByLanguage = countByKey(translations, (t) => t.languageName).slice(0, 8);
-  const conceptsByCategory = countByKey(concepts, (c) => c.category?.name).slice(0, 8);
+  const conceptsByCategory = countByKey(concepts, (c) => c.categoryName ?? c.category?.name).slice(0, 8);
   const languageStatus = countByKey(languages, (l) => (l.active ? "Active" : "Inactive"));
 
   return (

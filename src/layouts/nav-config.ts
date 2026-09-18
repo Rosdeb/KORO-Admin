@@ -30,17 +30,15 @@ export interface NavSection {
 }
 
 const ADMIN: Role[] = ["ROLE_ADMIN"];
-/** Everyone who can sign into the panel besides plain ROLE_USER — Reviewer and Moderator
- *  both get the submission queue and content views; only page-level checks (canManage /
- *  canEdit) further narrow what each can actually do. See docs/backend_api §"Roles". */
-const STAFF: Role[] = ["ROLE_ADMIN", "ROLE_LANGUAGE_REVIEWER", "ROLE_MODERATOR"];
+const ADMIN_MODERATOR: Role[] = ["ROLE_ADMIN", "ROLE_MODERATOR"];
+const ALL_STAFF: Role[] = ["ROLE_ADMIN", "ROLE_MODERATOR", "ROLE_LANGUAGE_REVIEWER"];
 
 export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Dashboard",
     items: [
       { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ADMIN },
-      { label: "Leaderboard", to: "/leaderboard", icon: Trophy, roles: STAFF },
+      { label: "Leaderboard", to: "/leaderboard", icon: Trophy, roles: ADMIN_MODERATOR },
       { label: "Analytics", to: "/analytics", icon: LineChart, roles: ADMIN },
     ],
   },
@@ -51,17 +49,17 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Content",
     items: [
-      { label: "Languages", to: "/content/languages", icon: Languages, roles: STAFF },
-      { label: "Categories", to: "/content/categories", icon: FolderTree, roles: STAFF },
-      { label: "Concepts", to: "/content/concepts", icon: BookOpen, roles: STAFF },
-      { label: "Translations", to: "/content/translations", icon: Type, roles: STAFF },
+      { label: "Languages", to: "/content/languages", icon: Languages, roles: ADMIN_MODERATOR },
+      { label: "Categories", to: "/content/categories", icon: FolderTree, roles: ADMIN },
+      { label: "Concepts", to: "/content/concepts", icon: BookOpen, roles: ADMIN_MODERATOR },
+      { label: "Translations", to: "/content/translations", icon: Type, roles: ADMIN_MODERATOR },
     ],
   },
   {
     label: "Moderation",
     items: [
-      { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: STAFF },
-      { label: "My Activity", to: "/activity", icon: Activity, roles: STAFF },
+      { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: ALL_STAFF },
+      { label: "My Activity", to: "/activity", icon: Activity, roles: ALL_STAFF },
     ],
   },
   {

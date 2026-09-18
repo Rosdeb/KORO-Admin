@@ -19,9 +19,15 @@ export function OverviewPage() {
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
-  const conceptsQuery = useQuery({ queryKey: queryKeys.concepts(), queryFn: () => conceptsApi.list() });
+  const conceptsQuery = useQuery({
+    queryKey: queryKeys.concepts({ page: 0, size: 1 }),
+    queryFn: () => conceptsApi.list({ page: 0, size: 1 }),
+  });
   const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
-  const pendingQuery = useQuery({ queryKey: queryKeys.pendingSubmissions, queryFn: submissionsApi.listPending });
+  const pendingQuery = useQuery({
+    queryKey: queryKeys.pendingSubmissions(0, 6),
+    queryFn: () => submissionsApi.listPending({ page: 0, size: 6 }),
+  });
   const rawStatsQuery = useQuery({ queryKey: queryKeys.adminStatistics, queryFn: statisticsApi.admin });
 
   const anyError =
@@ -77,13 +83,13 @@ export function OverviewPage() {
         <StatCard label="Active Users" value={activeUsers} icon={UserCheck} isLoading={usersQuery.isLoading} />
         <StatCard
           label="Pending Submissions"
-          value={pendingQuery.data?.length ?? null}
+          value={pendingQuery.data?.totalElements ?? null}
           icon={ClipboardCheck}
           isLoading={pendingQuery.isLoading}
         />
         <StatCard label="Languages" value={languagesQuery.data?.length ?? null} icon={Languages} isLoading={languagesQuery.isLoading} />
         <StatCard label="Categories" value={categoriesQuery.data?.length ?? null} icon={BookOpen} isLoading={categoriesQuery.isLoading} />
-        <StatCard label="Concepts" value={conceptsQuery.data?.length ?? null} icon={BookOpen} isLoading={conceptsQuery.isLoading} />
+        <StatCard label="Concepts" value={conceptsQuery.data?.totalElements ?? null} icon={BookOpen} isLoading={conceptsQuery.isLoading} />
         <StatCard label="Translations" value={translationsQuery.data?.length ?? null} icon={Type} isLoading={translationsQuery.isLoading} />
         <StatCard
           label="New Users (30d)"
@@ -115,11 +121,11 @@ export function OverviewPage() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : (pendingQuery.data?.length ?? 0) === 0 ? (
+            ) : (pendingQuery.data?.totalElements ?? 0) === 0 ? (
               <EmptyState title="Queue is clear" description="No submissions are waiting for review right now." />
             ) : (
               <div className="divide-y divide-border">
-                {pendingQuery.data!.slice(0, 6).map((s) => (
+                {pendingQuery.data!.content.map((s) => (
                   <div key={s.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">

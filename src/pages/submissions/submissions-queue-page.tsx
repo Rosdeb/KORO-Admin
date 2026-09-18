@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, X, Volume2, Quote, StickyNote, Eye } from "lucide-react";
+import { Check, CheckCheck, X, Volume2, Quote, StickyNote, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -27,17 +28,20 @@ import {
 import { submissionsApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
-import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import type { SubmissionApproveResponse, TranslationSubmission } from "@/types/api";
+import { useAuth } from "@/hooks/use-auth";
+import type { SubmissionApproveAllResponse, SubmissionApproveResponse, TranslationSubmission } from "@/types/api";
 
 type ReviewAction = "view" | "approve" | "reject";
 
 export function SubmissionsQueuePage() {
   const queryClient = useQueryClient();
+  const { hasRole } = useAuth();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: queryKeys.pendingSubmissions,
-    queryFn: submissionsApi.listPending,
+    queryKey: queryKeys.pendingSubmissions(page - 1, pageSize),
+    queryFn: () => submissionsApi.listPending({ page: page - 1, size: pageSize }),
   });
 
   const [search, setSearch] = useState("");
@@ -45,11 +49,13 @@ export function SubmissionsQueuePage() {
   const [reviewTarget, setReviewTarget] = useState<{ submission: TranslationSubmission; action: ReviewAction } | null>(null);
   const [reviewerNote, setReviewerNote] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [approveAllOpen, setApproveAllOpen] = useState(false);
+  const submissions = data?.content ?? [];
 
   const filtered = useMemo(() => {
-    if (!debouncedSearch.trim()) return data ?? [];
+    if (!debouncedSearch.trim()) return submissions;
     const q = debouncedSearch.toLowerCase();
-    return (data ?? []).filter(
+    return submissions.filter(
       (s) =>
         s.sourceWord.toLowerCase().includes(q) ||
         s.banglaTranslation.toLowerCase().includes(q) ||
@@ -58,9 +64,7 @@ export function SubmissionsQueuePage() {
         s.sourceLanguage?.name?.toLowerCase().includes(q) ||
         s.submittedBy?.name?.toLowerCase().includes(q),
     );
-  }, [data, debouncedSearch]);
-
-  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(filtered, 10);
+  }, [submissions, debouncedSearch]);
 
   const reviewMutation = useMutation<
     SubmissionApproveResponse | TranslationSubmission,
@@ -72,9 +76,7 @@ export function SubmissionsQueuePage() {
         ? submissionsApi.approve(id, { reviewerNote: note || undefined })
         : submissionsApi.reject(id, { reviewerNote: note || undefined, rejectionReason: reason }),
     onSuccess: (result, variables) => {
-      queryClient.setQueryData<TranslationSubmission[]>(queryKeys.pendingSubmissions, (prev) =>
-        prev?.filter((s) => s.id !== variables.id),
-      );
+      void queryClient.invalidateQueries({ queryKey: ["submissions", "pending"] });
       if (variables.action === "approve" && "translationsSaved" in result) {
         const count = result.translationsSaved.length;
         toast.success(`Submission approved — ${count} dictionary ${count === 1 ? "entry" : "entries"} created.`, {
@@ -86,6 +88,19 @@ export function SubmissionsQueuePage() {
       closeDialog();
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to review submission"),
+  });
+
+  const approveAllMutation = useMutation<SubmissionApproveAllResponse>({
+    mutationFn: submissionsApi.approveAll,
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["submissions", "pending"] });
+      if (result.failed?.length) {
+        toast.warning(result.message, { description: result.failed.join("\n") });
+      } else {
+        toast.success(result.message);
+      }
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to approve pending submissions"),
   });
 
   function openReview(submission: TranslationSubmission, action: ReviewAction) {
@@ -113,7 +128,22 @@ export function SubmissionsQueuePage() {
       <PageHeader
         title="Translation Submissions"
         description="Community-submitted dictionary words waiting for review."
-        actions={<RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />}
+        actions={
+          <>
+            {hasRole("ROLE_ADMIN") && (
+              <Button
+                variant="outline"
+                className="border-success/40 text-success hover:bg-success/10 hover:text-success"
+                disabled={isLoading || !data?.totalElements || approveAllMutation.isPending}
+                onClick={() => setApproveAllOpen(true)}
+              >
+                <CheckCheck className="size-4" />
+                Approve all
+              </Button>
+            )}
+            <RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />
+          </>
+        }
       />
 
       <SearchInput
@@ -150,7 +180,7 @@ export function SubmissionsQueuePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageItems.map((s) => (
+              {filtered.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -196,7 +226,16 @@ export function SubmissionsQueuePage() {
             </TableBody>
           </Table>
           <div className="border-t border-border p-3">
-            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.totalElements ?? 0}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
           </div>
         </>
       )}
@@ -367,6 +406,17 @@ export function SubmissionsQueuePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={approveAllOpen}
+        onOpenChange={setApproveAllOpen}
+        title="Approve all pending submissions?"
+        description={`This will attempt to publish all ${data?.totalElements ?? 0} pending submissions immediately. Submissions that cannot be approved will remain in the queue.`}
+        confirmLabel="Approve all"
+        onConfirm={async () => {
+          await approveAllMutation.mutateAsync();
+        }}
+      />
     </div>
   );
 }

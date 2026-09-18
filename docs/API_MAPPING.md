@@ -53,7 +53,7 @@ single "analytics" endpoint exists, so the frontend aggregates client-side
 |---|---|---|---|---|
 | Languages | `GET /api/v1/languages` (public) | `POST /api/v1/admin/languages` | `PUT /api/v1/admin/languages/{id}` | `DELETE /api/v1/admin/languages/{id}` |
 | Categories | `GET /api/v1/categories` (public) | `POST /api/v1/admin/categories` | `PUT /api/v1/admin/categories/{id}` | `DELETE /api/v1/admin/categories/{id}` |
-| Concepts | `GET /api/v1/concepts?categoryId=` (public) | `POST /api/v1/admin/concepts` | `PUT /api/v1/admin/concepts/{id}` | `DELETE /api/v1/admin/concepts/{id}` |
+| Concepts | `GET /api/v1/concepts?page=0&size=20&categoryId=` (public) → paged envelope `{ content, page, size, totalElements, totalPages, hasNext, hasPrevious }` | `POST /api/v1/admin/concepts` | `PUT /api/v1/admin/concepts/{id}` | `DELETE /api/v1/admin/concepts/{id}` |
 | Translations | `GET /api/v1/translations?conceptId=&languageId=` (public) | `POST /api/v1/admin/translations` | `PUT /api/v1/admin/translations/{id}` | `DELETE /api/v1/admin/translations/{id}` |
 
 The Translations page filters the already-fetched (concept/language-scoped) list client-side.
@@ -85,10 +85,12 @@ endpoint exists.
 
 | Page | Endpoint | Auth |
 |---|---|---|
-| Submission Queue (list) | `GET /api/v1/admin/submissions/pending` → `TranslationSubmission[]` (`category`, `sourceLanguage`, `sourceWord`, `banglaTranslation`, `englishTranslation`, `pronunciation`, `exampleSentence`, `notes`, `status`, `rejectionReason`, …) | Admin or Reviewer. **Only pending submissions are listable** — no endpoint returns approved/rejected history. |
+| Submission Queue (list) | `GET /api/v1/admin/submissions/pending?page=0&size=20` → paged envelope `{ content, page, size, totalElements, totalPages, hasNext, hasPrevious }` | Admin, Reviewer, or Moderator. **Only pending submissions are listable** — no endpoint returns approved/rejected history. |
 | Approve | `POST /api/v1/admin/submissions/{id}/approve` `{ reviewerNote? }` → `{ submission: TranslationSubmission, conceptId, translationsSaved: string[] }` (envelope, **not** the bare submission). May return `400` if the source/`bn`/`en` language is no longer configured. | Admin or Reviewer |
+| Approve all | `POST /api/v1/admin/submissions/approve-all` with no request body → `{ approvedCount, approvedIds, message, failed? }` | **Admin only** |
 | Reject | `POST /api/v1/admin/submissions/{id}/reject` `{ reviewerNote?, rejectionReason }` — `rejectionReason` is required, `400` if missing/blank | Admin or Reviewer |
-| My Activity | `GET /api/v1/activity?from=&to=` | Any role, but scoped to the caller's own actions | `from`/`to` are `date` (not `date-time`) query params. |
+| My Submissions | `GET /api/v1/submissions?page=0&size=20` → same paged envelope | Authenticated user, own submissions only |
+| My Activity | `GET /api/v1/activity?page=0&size=10&from=&to=` → paged envelope `{ content, page, size, totalElements, totalPages, hasNext, hasPrevious }` | Any role, but scoped to the caller's own actions | `from`/`to` are optional `date` (not `date-time`) query params. |
 | My Activity statistics panel | `GET /api/v1/activity/statistics` | Same as above | Also an undocumented-schema `object` — rendered dynamically like `/admin/statistics`. |
 
 ## Reports

@@ -53,7 +53,10 @@ export function TranslationsPage() {
   const canManage = hasRole("ROLE_ADMIN");
   const queryClient = useQueryClient();
 
-  const conceptsQuery = useQuery({ queryKey: queryKeys.concepts(), queryFn: () => conceptsApi.list() });
+  const conceptsQuery = useQuery({
+    queryKey: queryKeys.concepts({ page: 0, size: 100 }),
+    queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
+  });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
 
   const [conceptFilter, setConceptFilter] = useState("ALL");
@@ -195,7 +198,7 @@ export function TranslationsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All concepts</SelectItem>
-            {(conceptsQuery.data ?? []).map((c) => (
+            {(conceptsQuery.data?.content ?? []).map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.name}
               </SelectItem>
@@ -323,7 +326,7 @@ export function TranslationsPage() {
                     <SelectValue placeholder="Choose" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(conceptsQuery.data ?? []).map((c) => (
+                    {(conceptsQuery.data?.content ?? []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
                       </SelectItem>
