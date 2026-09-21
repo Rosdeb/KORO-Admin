@@ -18,6 +18,12 @@ export const translationsApi = {
     const res = await httpClient.get<PageResponse<TranslationResponse>>("/api/v1/translations", { params });
     return res.data;
   },
+  /** Fast total count — use this on dashboards instead of fetching the full list.
+   *  Endpoint: GET /api/v1/translations/count — returns a raw number. */
+  async count(): Promise<number> {
+    const res = await httpClient.get<number>("/api/v1/translations/count");
+    return res.data;
+  },
   /** Server-side search — matches text, pronunciation and concept name, Unicode-normalized.
    *  Used as a fallback when the locally-fetched page has no match for the query. */
   async search(payload: TranslationSearchRequest): Promise<TranslationResponse[]> {

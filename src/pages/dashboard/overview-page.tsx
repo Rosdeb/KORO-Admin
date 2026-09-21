@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubmissionStatusBadge } from "@/components/shared/status-badge";
-import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi, statisticsApi } from "@/api";
+import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi, statisticsApi, translationsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { periodGrowth } from "@/lib/analytics";
 import { formatNumber, humanizeKey } from "@/lib/utils";
@@ -27,9 +27,12 @@ export function OverviewPage() {
     queryKey: queryKeys.pendingSubmissions(0, 6),
     queryFn: () => submissionsApi.listPending({ page: 0, size: 6 }),
   });
-  // Statistics endpoint returns total counts instantly — used for the Translations stat card
-  // so we don't have to fetch all 800+ translation records just to show a number.
   const rawStatsQuery = useQuery({ queryKey: queryKeys.adminStatistics, queryFn: statisticsApi.admin });
+  // Dedicated fast count endpoint — returns a single number, no data download needed.
+  const translationsCountQuery = useQuery({
+    queryKey: queryKeys.translationsCount,
+    queryFn: () => translationsApi.count(),
+  });
 
   const anyError =
     usersQuery.error ||
@@ -49,16 +52,6 @@ export function OverviewPage() {
   const activeUsers = users.filter((u) => u.status === "ACTIVE").length;
   const userGrowth = periodGrowth(users, (u) => u.createdAt, 30);
 
-  // Extract translation total from the admin statistics payload.
-  // The backend field name is not contractually fixed; try common variants.
-  const rawStats = rawStatsQuery.data ?? {};
-  const translationTotal: number | null = (() => {
-    for (const key of ["totalTranslations", "translations", "translationCount", "total_translations"]) {
-      if (typeof rawStats[key] === "number") return rawStats[key] as number;
-    }
-    return null;
-  })();
-
   function refetchAll() {
     usersQuery.refetch();
     languagesQuery.refetch();
@@ -66,6 +59,7 @@ export function OverviewPage() {
     conceptsQuery.refetch();
     pendingQuery.refetch();
     rawStatsQuery.refetch();
+    translationsCountQuery.refetch();
   }
 
   if (anyError && !isLoading) {
@@ -98,7 +92,7 @@ export function OverviewPage() {
         <StatCard label="Languages" value={languagesQuery.data?.length ?? null} icon={Languages} isLoading={languagesQuery.isLoading} />
         <StatCard label="Categories" value={categoriesQuery.data?.length ?? null} icon={BookOpen} isLoading={categoriesQuery.isLoading} />
         <StatCard label="Concepts" value={conceptsQuery.data?.totalElements ?? null} icon={BookOpen} isLoading={conceptsQuery.isLoading} />
-        <StatCard label="Translations" value={translationTotal} icon={Type} isLoading={rawStatsQuery.isLoading} />
+        <StatCard label="Translations" value={translationsCountQuery.data ?? null} icon={Type} isLoading={translationsCountQuery.isLoading} />
         <StatCard
           label="New Users (30d)"
           value={userGrowth.currentPeriod}
