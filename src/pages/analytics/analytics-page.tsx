@@ -46,7 +46,7 @@ export function AnalyticsPage() {
     queryKey: queryKeys.concepts({ page: 0, size: 100 }),
     queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
   });
-  const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
+  const translationsQuery = useQuery({ queryKey: queryKeys.translations({ size: 1000 }), queryFn: () => translationsApi.list({ size: 1000 }) });
   const pendingQuery = useQuery({
     queryKey: queryKeys.pendingSubmissions(0, 100),
     queryFn: () => submissionsApi.listPending({ page: 0, size: 100 }),
@@ -55,7 +55,7 @@ export function AnalyticsPage() {
   const users = usersQuery.data ?? [];
   const languages = languagesQuery.data ?? [];
   const concepts = conceptsQuery.data?.content ?? [];
-  const translations = translationsQuery.data ?? [];
+  const translations = translationsQuery.data?.content ?? [];
   const pending = pendingQuery.data?.content ?? [];
 
   const userGrowthSeries = bucketByDate(users, (u) => u.createdAt, "day", 30);

@@ -11,8 +11,8 @@ export const queryKeys = {
   categories: ["categories"] as const,
   concepts: (params?: { categoryId?: string; page?: number; size?: number }) =>
     ["concepts", params?.categoryId ?? "all", params?.page ?? 0, params?.size ?? 20] as const,
-  translations: (params?: { conceptId?: string; languageId?: string }) =>
-    ["translations", params?.conceptId ?? "all", params?.languageId ?? "all"] as const,
+  translations: (params?: { conceptId?: string; languageId?: string; page?: number; size?: number }) =>
+    ["translations", params?.conceptId ?? "all", params?.languageId ?? "all", params?.page ?? 0, params?.size ?? 20] as const,
   translationsSearch: (query: string, targetLanguageId?: string) =>
     ["translations", "search", query, targetLanguageId ?? "all"] as const,
   pendingSubmissions: (page = 0, size = 20) => ["submissions", "pending", page, size] as const,

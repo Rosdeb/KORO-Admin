@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +32,6 @@ import {
 import { translationsApi, conceptsApi, languagesApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
-import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/hooks/use-auth";
 import type { TranslationResponse } from "@/types/api";
@@ -46,6 +45,8 @@ const translationSchema = z.object({
 });
 type TranslationFormValues = z.infer<typeof translationSchema>;
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 export function TranslationsPage() {
   const { hasRole } = useAuth();
   // Moderators get the backend's "limited dictionary edit" — PUT only, no create/delete (see docs/backend_api §4).
@@ -53,28 +54,88 @@ export function TranslationsPage() {
   const canManage = hasRole("ROLE_ADMIN");
   const queryClient = useQueryClient();
 
+  // ── Filters & server-side pagination state ──────────────────────────────────
+  const [conceptFilter, setConceptFilter] = useState("ALL");
+  const [languageFilter, setLanguageFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Reset to page 1 whenever a filter changes
+  function handleConceptFilter(v: string) { setConceptFilter(v); setPage(1); }
+  function handleLanguageFilter(v: string) { setLanguageFilter(v); setPage(1); }
+  function handleSearch(v: string) { setSearch(v); setPage(1); }
+  function handlePageSizeChange(v: number) { setPageSize(v); setPage(1); }
+
+  const trimmedSearch = debouncedSearch.trim();
+
+  // ── Support data ─────────────────────────────────────────────────────────────
   const conceptsQuery = useQuery({
     queryKey: queryKeys.concepts({ page: 0, size: 100 }),
     queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
   });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
 
-  const [conceptFilter, setConceptFilter] = useState("ALL");
-  const [languageFilter, setLanguageFilter] = useState("ALL");
+  // ── Main data: server-side paginated translations ─────────────────────────────
+  // When the user is actively searching we hit the search endpoint (POST) and paginate
+  // the results client-side (search endpoint returns an array, no page params supported).
+  // For the normal (non-search) view we drive pagination entirely from the backend.
+  const isSearchMode = trimmedSearch.length > 0;
+  const searchTargetLanguageId = languageFilter === "ALL" ? undefined : languageFilter;
+
+  // Normal paginated list (no search term)
   const translationsQuery = useQuery({
     queryKey: queryKeys.translations({
       conceptId: conceptFilter === "ALL" ? undefined : conceptFilter,
       languageId: languageFilter === "ALL" ? undefined : languageFilter,
+      page: page - 1, // backend is 0-indexed
+      size: pageSize,
     }),
     queryFn: () =>
       translationsApi.list({
         conceptId: conceptFilter === "ALL" ? undefined : conceptFilter,
         languageId: languageFilter === "ALL" ? undefined : languageFilter,
+        page: page - 1,
+        size: pageSize,
       }),
+    enabled: !isSearchMode,
+    placeholderData: (prev) => prev, // keep previous page visible while next loads
   });
 
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search);
+  // Search mode: fetch from search endpoint, apply concept filter client-side
+  const searchQuery = useQuery({
+    queryKey: queryKeys.translationsSearch(trimmedSearch, searchTargetLanguageId),
+    queryFn: () =>
+      translationsApi.search({ query: trimmedSearch, targetLanguageId: searchTargetLanguageId }),
+    enabled: isSearchMode,
+    staleTime: 60_000,
+  });
+
+  // ── Derive rows & pagination metadata for the current view ───────────────────
+  let rows: TranslationResponse[];
+  let totalElements: number;
+  let totalPages: number;
+  let isLoading: boolean;
+
+  if (isSearchMode) {
+    // Client-side slice for search results
+    let allResults = searchQuery.data ?? [];
+    if (conceptFilter !== "ALL") allResults = allResults.filter((t) => t.conceptId === conceptFilter);
+    totalElements = allResults.length;
+    totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
+    const clampedPage = Math.min(page, totalPages);
+    const start = (clampedPage - 1) * pageSize;
+    rows = allResults.slice(start, start + pageSize);
+    isLoading = searchQuery.isFetching && !searchQuery.data;
+  } else {
+    rows = translationsQuery.data?.content ?? [];
+    totalElements = translationsQuery.data?.totalElements ?? 0;
+    totalPages = translationsQuery.data?.totalPages ?? 1;
+    isLoading = translationsQuery.isLoading;
+  }
+
+  // ── Form state ───────────────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TranslationResponse | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TranslationResponse | null>(null);
@@ -83,47 +144,6 @@ export function TranslationsPage() {
     resolver: zodResolver(translationSchema),
     defaultValues: { conceptId: "", languageId: "", text: "", pronunciation: "", notes: "" },
   });
-
-  const trimmedSearch = debouncedSearch.trim();
-
-  const localFiltered = useMemo(() => {
-    if (!trimmedSearch) return translationsQuery.data ?? [];
-    const q = trimmedSearch.toLowerCase();
-    return (translationsQuery.data ?? []).filter(
-      (t) =>
-        t.text.toLowerCase().includes(q) ||
-        t.conceptName.toLowerCase().includes(q) ||
-        (t.pronunciation?.toLowerCase().includes(q) ?? false),
-    );
-  }, [translationsQuery.data, trimmedSearch]);
-
-  // When the already-fetched page has no match for the query, fall back to the backend's
-  // search endpoint (Unicode-normalized, also matches pronunciation + concept name) rather
-  // than fetching and caching the entire dictionary just to filter it client-side.
-  const needsServerSearch =
-    !!trimmedSearch && !translationsQuery.isLoading && localFiltered.length === 0;
-  const searchTargetLanguageId = languageFilter === "ALL" ? undefined : languageFilter;
-
-  const searchQuery = useQuery({
-    queryKey: queryKeys.translationsSearch(trimmedSearch, searchTargetLanguageId),
-    queryFn: () =>
-      translationsApi.search({ query: trimmedSearch, targetLanguageId: searchTargetLanguageId }),
-    enabled: needsServerSearch,
-    staleTime: 60_000,
-  });
-
-  const usingServerSearch = needsServerSearch && (searchQuery.data?.length ?? 0) > 0;
-
-  const rows = useMemo(() => {
-    if (!usingServerSearch) return localFiltered;
-    const byId = new Map((translationsQuery.data ?? []).map((t) => [t.id, t]));
-    let result = (searchQuery.data ?? []).map((t) => byId.get(t.id) ?? t);
-    // The search endpoint filters by language, not concept — keep the concept filter honoured.
-    if (conceptFilter !== "ALL") result = result.filter((t) => t.conceptId === conceptFilter);
-    return result;
-  }, [usingServerSearch, localFiltered, searchQuery.data, translationsQuery.data, conceptFilter]);
-
-  const { page, pageSize, pageItems, total, setPage, setPageSize } = usePagination(rows, 10);
 
   const saveMutation = useMutation({
     mutationFn: (payload: TranslationFormValues) =>
@@ -162,7 +182,7 @@ export function TranslationsPage() {
     setFormOpen(true);
   }
 
-  if (translationsQuery.error) {
+  if (translationsQuery.error && !isSearchMode) {
     return <ErrorState error={translationsQuery.error} onRetry={() => translationsQuery.refetch()} className="mt-10" />;
   }
 
@@ -191,8 +211,8 @@ export function TranslationsPage() {
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search translations…" className="sm:max-w-xs" />
-        <Select value={conceptFilter} onValueChange={setConceptFilter}>
+        <SearchInput value={search} onChange={handleSearch} placeholder="Search translations…" className="sm:max-w-xs" />
+        <Select value={conceptFilter} onValueChange={handleConceptFilter}>
           <SelectTrigger className="sm:w-48">
             <SelectValue placeholder="All concepts" />
           </SelectTrigger>
@@ -205,7 +225,7 @@ export function TranslationsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={languageFilter} onValueChange={setLanguageFilter}>
+        <Select value={languageFilter} onValueChange={handleLanguageFilter}>
           <SelectTrigger className="sm:w-44">
             <SelectValue placeholder="All languages" />
           </SelectTrigger>
@@ -220,13 +240,12 @@ export function TranslationsPage() {
         </Select>
       </div>
 
-      {usingServerSearch && (
+      {isSearchMode && (
         <p className="text-xs text-muted-foreground">
-          No match on the loaded page — showing {searchQuery.data?.length ?? 0} result
-          {(searchQuery.data?.length ?? 0) === 1 ? "" : "s"} from a server-side search instead.
+          Showing {totalElements} server-side result{totalElements === 1 ? "" : "s"} for &ldquo;{trimmedSearch}&rdquo;
         </p>
       )}
-      {needsServerSearch && searchQuery.error && (
+      {isSearchMode && searchQuery.error && (
         <p className="text-xs text-destructive">
           {searchQuery.error instanceof ApiError ? searchQuery.error.message : "Server search failed."}
         </p>
@@ -234,7 +253,7 @@ export function TranslationsPage() {
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          {translationsQuery.isLoading || (needsServerSearch && searchQuery.isFetching && !searchQuery.data) ? (
+          {isLoading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -246,7 +265,7 @@ export function TranslationsPage() {
                 title="No translations found"
                 description={
                   trimmedSearch
-                    ? "Nothing matched this search on the loaded page or on the server."
+                    ? "Nothing matched this search."
                     : "Try a different filter combination."
                 }
               />
@@ -266,7 +285,7 @@ export function TranslationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageItems.map((t) => (
+                  {rows.map((t) => (
                     <TableRow key={t.id}>
                       <TableCell className="font-medium">{t.conceptName}</TableCell>
                       <TableCell className="text-muted-foreground">{t.categoryName}</TableCell>
@@ -302,7 +321,14 @@ export function TranslationsPage() {
                 </TableBody>
               </Table>
               <div className="border-t border-border p-3">
-                <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} />
+                <Pagination
+                  page={isSearchMode ? Math.min(page, totalPages) : page}
+                  pageSize={pageSize}
+                  total={totalElements}
+                  onPageChange={setPage}
+                  onPageSizeChange={handlePageSizeChange}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                />
               </div>
             </>
           )}

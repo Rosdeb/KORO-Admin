@@ -38,7 +38,7 @@ export function ReportsPage() {
     queryKey: queryKeys.concepts({ page: 0, size: 100 }),
     queryFn: () => conceptsApi.list({ page: 0, size: 100 }),
   });
-  const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
+  const translationsQuery = useQuery({ queryKey: queryKeys.translations({ size: 1000 }), queryFn: () => translationsApi.list({ size: 1000 }) });
   const pendingQuery = useQuery({
     queryKey: queryKeys.pendingSubmissions(0, 100),
     queryFn: () => submissionsApi.listPending({ page: 0, size: 100 }),
@@ -51,7 +51,7 @@ export function ReportsPage() {
 
   const users = usersQuery.data ?? [];
   const growthSeries = bucketByDate(users, (u) => u.createdAt, "week", 12);
-  const languageUsage = countByKey(translationsQuery.data ?? [], (t) => t.languageName);
+  const languageUsage = countByKey(translationsQuery.data?.content ?? [], (t) => t.languageName);
   const categoryUsage = countByKey(conceptsQuery.data?.content ?? [], (c) => c.categoryName ?? c.category?.name);
 
   const summaryRows = useMemo(

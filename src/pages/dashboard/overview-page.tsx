@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubmissionStatusBadge } from "@/components/shared/status-badge";
-import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, translationsApi, submissionsApi, statisticsApi } from "@/api";
+import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi, statisticsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { periodGrowth } from "@/lib/analytics";
 import { formatNumber, humanizeKey } from "@/lib/utils";
@@ -23,11 +23,12 @@ export function OverviewPage() {
     queryKey: queryKeys.concepts({ page: 0, size: 1 }),
     queryFn: () => conceptsApi.list({ page: 0, size: 1 }),
   });
-  const translationsQuery = useQuery({ queryKey: queryKeys.translations(), queryFn: () => translationsApi.list() });
   const pendingQuery = useQuery({
     queryKey: queryKeys.pendingSubmissions(0, 6),
     queryFn: () => submissionsApi.listPending({ page: 0, size: 6 }),
   });
+  // Statistics endpoint returns total counts instantly — used for the Translations stat card
+  // so we don't have to fetch all 800+ translation records just to show a number.
   const rawStatsQuery = useQuery({ queryKey: queryKeys.adminStatistics, queryFn: statisticsApi.admin });
 
   const anyError =
@@ -35,7 +36,6 @@ export function OverviewPage() {
     languagesQuery.error ||
     categoriesQuery.error ||
     conceptsQuery.error ||
-    translationsQuery.error ||
     pendingQuery.error;
 
   const isLoading =
@@ -43,19 +43,27 @@ export function OverviewPage() {
     languagesQuery.isLoading ||
     categoriesQuery.isLoading ||
     conceptsQuery.isLoading ||
-    translationsQuery.isLoading ||
     pendingQuery.isLoading;
 
   const users = usersQuery.data ?? [];
   const activeUsers = users.filter((u) => u.status === "ACTIVE").length;
   const userGrowth = periodGrowth(users, (u) => u.createdAt, 30);
 
+  // Extract translation total from the admin statistics payload.
+  // The backend field name is not contractually fixed; try common variants.
+  const rawStats = rawStatsQuery.data ?? {};
+  const translationTotal: number | null = (() => {
+    for (const key of ["totalTranslations", "translations", "translationCount", "total_translations"]) {
+      if (typeof rawStats[key] === "number") return rawStats[key] as number;
+    }
+    return null;
+  })();
+
   function refetchAll() {
     usersQuery.refetch();
     languagesQuery.refetch();
     categoriesQuery.refetch();
     conceptsQuery.refetch();
-    translationsQuery.refetch();
     pendingQuery.refetch();
     rawStatsQuery.refetch();
   }
@@ -90,7 +98,7 @@ export function OverviewPage() {
         <StatCard label="Languages" value={languagesQuery.data?.length ?? null} icon={Languages} isLoading={languagesQuery.isLoading} />
         <StatCard label="Categories" value={categoriesQuery.data?.length ?? null} icon={BookOpen} isLoading={categoriesQuery.isLoading} />
         <StatCard label="Concepts" value={conceptsQuery.data?.totalElements ?? null} icon={BookOpen} isLoading={conceptsQuery.isLoading} />
-        <StatCard label="Translations" value={translationsQuery.data?.length ?? null} icon={Type} isLoading={translationsQuery.isLoading} />
+        <StatCard label="Translations" value={translationTotal} icon={Type} isLoading={rawStatsQuery.isLoading} />
         <StatCard
           label="New Users (30d)"
           value={userGrowth.currentPeriod}
