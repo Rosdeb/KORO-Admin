@@ -21,6 +21,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { bucketByDate, countByKey } from "@/lib/analytics";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { downloadCsv, formatNumber } from "@/lib/utils";
+import type { TranslationResponse } from "@/types/api";
 
 const tooltipStyle = {
   borderRadius: 8,
@@ -63,8 +64,10 @@ export function ReportsPage() {
       { metric: "Active Languages", value: (languagesQuery.data ?? []).filter((l) => l.active).length },
       { metric: "Total Categories", value: categoriesQuery.data?.length ?? 0 },
       { metric: "Total Concepts", value: conceptsQuery.data?.totalElements ?? 0 },
-      { metric: "Total Translations", value: translationsQuery.data?.length ?? 0 },
-      { metric: "Verified Translations", value: (translationsQuery.data ?? []).filter((t) => t.verified).length },
+      { metric: "Total Translations", value: translationsQuery.data?.totalElements ?? 0 },
+      {   metric: "Verified Translations",   value: (translationsQuery.data?.content ?? []).filter((t: TranslationResponse) => t.verified
+  ).length 
+},
       { metric: "Pending Submissions", value: pendingQuery.data?.totalElements ?? 0 },
     ],
     [users, languagesQuery.data, categoriesQuery.data, conceptsQuery.data, translationsQuery.data, pendingQuery.data],
