@@ -9,6 +9,7 @@ import {
   BookOpen,
   Type,
   ClipboardCheck,
+  Mail,
   Activity,
   FileBarChart,
   ShieldCheck,
@@ -59,6 +60,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Moderation",
     items: [
       { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: ALL_STAFF },
+      { label: "Contact Messages", to: "/contact-messages", icon: Mail, roles: ADMIN_MODERATOR },
       { label: "My Activity", to: "/activity", icon: Activity, roles: ALL_STAFF },
     ],
   },

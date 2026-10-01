@@ -56,7 +56,7 @@ real dev backend) — not assumed.
       base URL (`VITE_API_BASE_URL`); tokens live in `localStorage`, never
       logged or rendered.
 - [x] **Environment configuration works** — `.env.example` documents
-      `VITE_API_BASE_URL`; no URLs are hardcoded in source.
+      `VITE_API_BASE_URL`; the production API URL is the fallback when it is unset.
 - [x] **Build succeeds** — `npm run build` (`tsc -b && vite build`) completes
       with zero type errors.
 - [x] **Production build is optimized** — route-level code splitting via

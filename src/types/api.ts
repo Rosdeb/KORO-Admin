@@ -9,6 +9,8 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
+export type ContactMessageStatus = "PENDING" | "READ" | "REPLIED" | "ARCHIVED";
+
 export interface PageResponse<T> {
   content: T[];
   page: number;
@@ -217,6 +219,52 @@ export interface ImageRecognitionResponse {
   categoryName: string | null;
   translations: TranslationResponse[];
   createdAt: string;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: ContactMessageStatus;
+  userId?: string | null;
+  replySubject?: string | null;
+  replyMessage?: string | null;
+  repliedBy?: string | null;
+  repliedByUserId?: string | null;
+  repliedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactMessageStatistics {
+  total: number;
+  pending: number;
+  read: number;
+  replied: number;
+  archived: number;
+}
+
+export interface ContactMessageReplyRequest {
+  subject: string;
+  message: string;
+}
+
+export interface ContactMessageReplyResponse {
+  message: string;
+  contactMessage: ContactMessage;
+}
+
+export interface ContactMessageStatusUpdateRequest {
+  status: ContactMessageStatus;
+}
+
+export interface ContactMessageStatusUpdateResponse {
+  id: string;
+  status: ContactMessageStatus;
+  name: string;
+  email: string;
 }
 
 // ---- Request payloads ----

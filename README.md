@@ -11,8 +11,7 @@ for what the API doesn't support yet.
 ## Requirements
 
 - Node.js 20+ and npm
-- The Koro backend running and reachable (default expected at
-  `http://localhost:8080`)
+- The Koro backend running and reachable (default: `https://api.korot.site`)
 - An account with the `ROLE_ADMIN` or `ROLE_LANGUAGE_REVIEWER` role — plain
   `ROLE_USER` accounts can sign in but are redirected to a "no access" screen
 
@@ -20,7 +19,7 @@ for what the API doesn't support yet.
 
 ```bash
 npm install
-cp .env.example .env   # then edit VITE_API_BASE_URL if your backend isn't on localhost:8080
+cp .env.example .env   # edit VITE_API_BASE_URL to use a different backend
 npm run dev
 ```
 
@@ -32,7 +31,7 @@ proxy API requests in this setup.
 
 | Variable | Description | Default |
 |---|---|---|
-| `VITE_API_BASE_URL` | Base URL of the Koro backend REST API | `http://localhost:8080` |
+| `VITE_API_BASE_URL` | Base URL of the Koro backend REST API | `https://api.korot.site` |
 
 No production URLs are hardcoded anywhere in source — see `.env.example`.
 

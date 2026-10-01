@@ -92,6 +92,12 @@ endpoint exists.
 | My Submissions | `GET /api/v1/submissions?page=0&size=20` → same paged envelope | Authenticated user, own submissions only |
 | My Activity | `GET /api/v1/activity?page=0&size=10&from=&to=` → paged envelope `{ content, page, size, totalElements, totalPages, hasNext, hasPrevious }` | Any role, but scoped to the caller's own actions | `from`/`to` are optional `date` (not `date-time`) query params. |
 | My Activity statistics panel | `GET /api/v1/activity/statistics` | Same as above | Also an undocumented-schema `object` — rendered dynamically like `/admin/statistics`. |
+| Contact Messages (list) | `GET /api/v1/admin/contact-messages?status=&search=&page=&size=` | Admin or Moderator |
+| Contact Message Detail | `GET /api/v1/admin/contact-messages/{id}?markRead=true` | Admin or Moderator | Automatically transitions `PENDING` → `READ` when `markRead=true`. |
+| Reply via Email | `POST /api/v1/admin/contact-messages/{id}/reply` `{ subject, message }` | Admin or Moderator | Dispatches email via Resend and sets status to `REPLIED`. |
+| Update Status | `PUT /api/v1/admin/contact-messages/{id}/status` `{ status }` | Admin or Moderator | Valid: `PENDING`, `READ`, `REPLIED`, `ARCHIVED`. |
+| Contact Message Stats | `GET /api/v1/admin/contact-messages/statistics` | Admin or Moderator | Returns `{ total, pending, read, replied, archived }`. |
+| Delete Contact Message | `DELETE /api/v1/admin/contact-messages/{id}` | **Admin only** | Permanent deletion. |
 
 ## Reports
 

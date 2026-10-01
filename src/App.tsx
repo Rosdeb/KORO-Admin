@@ -26,6 +26,9 @@ const TranslationsPage = lazy(() => import("@/pages/content/translations-page").
 const SubmissionsQueuePage = lazy(() =>
   import("@/pages/submissions/submissions-queue-page").then((m) => ({ default: m.SubmissionsQueuePage })),
 );
+const ContactMessagesPage = lazy(() =>
+  import("@/pages/contact/contact-messages-page").then((m) => ({ default: m.ContactMessagesPage })),
+);
 const MyActivityPage = lazy(() => import("@/pages/activity/my-activity-page").then((m) => ({ default: m.MyActivityPage })));
 const ReportsPage = lazy(() => import("@/pages/reports/reports-page").then((m) => ({ default: m.ReportsPage })));
 const AdminUsersPage = lazy(() =>
@@ -96,6 +99,7 @@ export default function App() {
                       <Route path="content/languages" element={<LanguagesPage />} />
                       <Route path="content/concepts" element={<ConceptsPage />} />
                       <Route path="content/translations" element={<TranslationsPage />} />
+                      <Route path="contact-messages" element={<ContactMessagesPage />} />
                     </Route>
 
                     <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_MODERATOR", "ROLE_LANGUAGE_REVIEWER"]} />}>

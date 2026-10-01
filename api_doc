@@ -74,6 +74,13 @@ All protected endpoints require a `Bearer <JWT_TOKEN>` in the `Authorization` he
 | `/api/v1/admin/concepts/{id}` | DELETE | | | | | ✅ |
 | `/api/v1/admin/translations` | POST | | | | | ✅ |
 | `/api/v1/admin/translations/{id}` | DELETE | | | | | ✅ |
+| `/api/v1/contact` (or `/contact-us`) | POST | ✅ | – | – | – | – |
+| `/api/v1/admin/contact-messages` | GET | | | | ✅ | ✅ |
+| `/api/v1/admin/contact-messages/{id}` | GET | | | | ✅ | ✅ |
+| `/api/v1/admin/contact-messages/{id}/reply` | POST | | | | ✅ | ✅ |
+| `/api/v1/admin/contact-messages/{id}/status` | PUT | | | | ✅ | ✅ |
+| `/api/v1/admin/contact-messages/statistics` | GET | | | | ✅ | ✅ |
+| `/api/v1/admin/contact-messages/{id}` | DELETE | | | | | ✅ |
 
 > **Not yet built:** the table you gave includes a "Review Reports" capability for Moderator/Admin. There is no content-flagging/report feature anywhere in this codebase today (no `Report` entity, no submit-a-report endpoint for users) — "Moderation History" above is served from the existing submission audit trail (`reviewedBy`/`reviewedAt` on `TranslationSubmission`), which is a different thing. Say the word if you want a real report/flag system built; it would need a new entity + a user-facing "report this entry" endpoint before there's anything for a moderator to review.
 
@@ -407,6 +414,127 @@ A submission is a full dictionary entry — a word in its **source language**, p
     ```
 *   **Access**: `ROLE_ADMIN` only, except the routes marked above which also accept `ROLE_MODERATOR`.
 *   **Note**: the public `GET /api/v1/languages` only returns languages with `active: true` (see §3). To manage — and see — inactive languages, use the admin-only `GET /api/v1/admin/languages`, which returns every language regardless of `active` status. Setting `active: false` via `PUT` is a soft-deactivation: the record still exists and is still editable, it just drops out of the public list.
+
+---
+
+## 10. Contact Messages API (`/api/v1/admin/contact-messages`)
+
+### Submit Public Inquiry
+*   **URL**: `/api/v1/contact` (or `/api/v1/contact-us`)
+*   **Method**: `POST`
+*   **Access**: Public
+
+### List Contact Messages
+*   **URL**: `/api/v1/admin/contact-messages`
+*   **Method**: `GET`
+*   **Access**: `ROLE_ADMIN` or `ROLE_MODERATOR`
+*   **Query Parameters**: `status` (`PENDING`, `READ`, `REPLIED`, `ARCHIVED`), `search`, `page`, `size`
+
+### Get Contact Message Detail
+*   **URL**: `/api/v1/admin/contact-messages/{id}`
+*   **Method**: `GET`
+*   **Access**: `ROLE_ADMIN` or `ROLE_MODERATOR`
+*   **Query Parameters**: `markRead` (optional, default `true`): If true and message status is `PENDING`, automatically changes status to `READ`.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": "673f1a2b3c4d5e6f7a8b9c0d",
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "subject": "Question about indigenous translations",
+      "message": "Hello, I would like to contribute translations for the Koch language.",
+      "status": "READ",
+      "userId": null,
+      "replySubject": null,
+      "replyMessage": null,
+      "repliedBy": null,
+      "repliedByUserId": null,
+      "repliedAt": null,
+      "createdAt": "2026-10-01T19:15:00",
+      "updatedAt": "2026-10-01T19:16:30"
+    }
+    ```
+
+### Reply to Message via Email
+*   **URL**: `/api/v1/admin/contact-messages/{id}/reply`
+*   **Method**: `POST`
+*   **Access**: `ROLE_ADMIN` or `ROLE_MODERATOR`
+*   **Action**: Sends a formatted HTML & plain-text email to the user via Resend, attaches admin name/id, quotes original message, and sets status to `REPLIED`.
+*   **Request Body**:
+    ```json
+    {
+      "subject": "Re: Question about indigenous translations",
+      "message": "Hi Jane, we would love to have your contributions! Please create an account on the platform and submit your entries."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "message": "Reply sent successfully to jane@example.com",
+      "contactMessage": {
+        "id": "673f1a2b3c4d5e6f7a8b9c0d",
+        "name": "Jane Doe",
+        "email": "jane@example.com",
+        "subject": "Question about indigenous translations",
+        "message": "Hello, I would like to contribute translations...",
+        "status": "REPLIED",
+        "replySubject": "Re: Question about indigenous translations",
+        "replyMessage": "Hi Jane, we would love to have your contributions! Please create an account on the platform and submit your entries.",
+        "repliedBy": "Admin User",
+        "repliedByUserId": "651a2b3c4d5e6f7a8b9c0d12",
+        "repliedAt": "2026-10-01T19:20:00",
+        "createdAt": "2026-10-01T19:15:00",
+        "updatedAt": "2026-10-01T19:20:00"
+      }
+    }
+    ```
+
+### Update Message Status Manually
+*   **URL**: `/api/v1/admin/contact-messages/{id}/status`
+*   **Method**: `PUT`
+*   **Access**: `ROLE_ADMIN` or `ROLE_MODERATOR`
+*   **Request Body**:
+    ```json
+    {
+      "status": "ARCHIVED"
+    }
+    ```
+    *(Valid status values: `PENDING`, `READ`, `REPLIED`, `ARCHIVED`)*
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": "673f1a2b3c4d5e6f7a8b9c0d",
+      "status": "ARCHIVED",
+      "name": "Jane Doe",
+      "email": "jane@example.com"
+    }
+    ```
+
+### Get Contact Messages Statistics
+*   **URL**: `/api/v1/admin/contact-messages/statistics`
+*   **Method**: `GET`
+*   **Access**: `ROLE_ADMIN` or `ROLE_MODERATOR`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "total": 15,
+      "pending": 4,
+      "read": 2,
+      "replied": 8,
+      "archived": 1
+    }
+    ```
+
+### Delete Contact Message
+*   **URL**: `/api/v1/admin/contact-messages/{id}`
+*   **Method**: `DELETE`
+*   **Access**: `ROLE_ADMIN` only
+*   **Response (200 OK)**:
+    ```json
+    {
+      "message": "Contact message deleted successfully"
+    }
+    ```
 
 ---
 

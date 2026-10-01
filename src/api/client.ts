@@ -3,7 +3,7 @@ import { tokenStorage } from "@/lib/token-storage";
 import { authStorage } from "@/lib/auth-storage";
 import type { ApiErrorBody, TokenRefreshResponse } from "@/types/api";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://api.korot.site";
 
 export class ApiError extends Error {
   status: number;

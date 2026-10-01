@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { Role, SubmissionStatus, UserStatus } from "@/types/api";
+import type { ContactMessageStatus, Role, SubmissionStatus, UserStatus } from "@/types/api";
 
 const USER_STATUS_VARIANT: Record<UserStatus, "success" | "destructive" | "secondary"> = {
   ACTIVE: "success",
@@ -20,6 +20,18 @@ const SUBMISSION_STATUS_VARIANT: Record<string, "success" | "destructive" | "war
 
 export function SubmissionStatusBadge({ status }: { status: SubmissionStatus | string }) {
   const variant = SUBMISSION_STATUS_VARIANT[status] ?? "secondary";
+  return <Badge variant={variant}>{status}</Badge>;
+}
+
+const CONTACT_MESSAGE_STATUS_VARIANT: Record<ContactMessageStatus, "warning" | "secondary" | "success" | "outline"> = {
+  PENDING: "warning",
+  READ: "secondary",
+  REPLIED: "success",
+  ARCHIVED: "outline",
+};
+
+export function ContactMessageStatusBadge({ status }: { status: ContactMessageStatus | string }) {
+  const variant = CONTACT_MESSAGE_STATUS_VARIANT[status as ContactMessageStatus] ?? "secondary";
   return <Badge variant={variant}>{status}</Badge>;
 }
 
