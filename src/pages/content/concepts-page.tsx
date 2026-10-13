@@ -1,3 +1,4 @@
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -53,7 +54,7 @@ export function ConceptsPage() {
 
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 20);
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const conceptsQuery = useQuery({
     queryKey: queryKeys.concepts({

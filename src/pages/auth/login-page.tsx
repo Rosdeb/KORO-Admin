@@ -11,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/api/client";
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import type { Role } from "@/types/api";
 
-/** Admins land on the Overview dashboard; Reviewers/Moderators land on the Submission Queue,
+/** Admins use their chosen landing page; Reviewers/Moderators land on the Submission Queue,
  *  the only "home" page their role can actually see (Overview/Analytics call admin-only endpoints). */
 function landingPathFor(roles: Role[]): string {
-  return roles.includes("ROLE_ADMIN") ? "/dashboard" : "/submissions";
+  return roles.includes("ROLE_ADMIN") ? getAdminPreferences().startPage : "/submissions";
 }
 
 const loginSchema = z.object({

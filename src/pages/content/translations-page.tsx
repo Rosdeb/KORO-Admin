@@ -1,3 +1,4 @@
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -60,7 +61,7 @@ export function TranslationsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 20);
 
   // Reset to page 1 whenever a filter changes
   function handleConceptFilter(v: string) { setConceptFilter(v); setPage(1); }

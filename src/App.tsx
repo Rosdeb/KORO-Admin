@@ -2,12 +2,13 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { Loader2 } from "lucide-react";
+import { PageLoading } from "@/components/shared/page-loading";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { ProtectedRoute } from "@/routes/protected-route";
 import { RoleRoute } from "@/routes/role-route";
 import { AppLayout } from "@/layouts/app-layout";
+import { useAdminPreferences } from "@/lib/admin-preferences";
 import { useAuth } from "@/hooks/use-auth";
 
 import { LoginPage } from "@/pages/auth/login-page";
@@ -52,19 +53,16 @@ const queryClient = new QueryClient({
 });
 
 function PageFallback() {
-  return (
-    <div className="flex h-64 items-center justify-center">
-      <Loader2 className="size-6 animate-spin text-muted-foreground" />
-    </div>
-  );
+  return <PageLoading />;
 }
 
-/** Admins land on the Overview dashboard; Reviewers/Moderators land on the Submission
+/** Admins use their chosen landing page; Reviewers/Moderators land on the Submission
  *  Queue — the only "home" page their role can actually see (Overview/Analytics are
  *  backed by admin-only endpoints). */
 function IndexRedirect() {
   const { hasRole } = useAuth();
-  return <Navigate to={hasRole("ROLE_ADMIN") ? "/dashboard" : "/submissions"} replace />;
+  const preferences = useAdminPreferences();
+  return <Navigate to={hasRole("ROLE_ADMIN") ? preferences.startPage : "/submissions"} replace />;
 }
 
 export default function App() {

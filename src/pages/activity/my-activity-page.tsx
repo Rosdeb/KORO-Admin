@@ -1,3 +1,4 @@
+import { getAdminPreferences } from "@/lib/admin-preferences";
 // import { useMemo, useState } from "react";
 // import { useQuery } from "@tanstack/react-query";
 // import { PageHeader } from "@/components/shared/page-header";
@@ -229,7 +230,7 @@ export function MyActivityPage() {
   const [to, setTo] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 10);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: [...queryKeys.activity, from, to, page - 1, pageSize],

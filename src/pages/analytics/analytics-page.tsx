@@ -1,23 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
-import { Info } from "lucide-react";
+import { VerticalBarChart, DistributionChart, LanguageDonutChart } from "@/components/shared/analytics-charts";
+import { ChevronDown } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ChartCard } from "@/components/shared/chart-card";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   adminUsersApi,
   languagesApi,
@@ -27,19 +13,27 @@ import {
 } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { bucketByDate, countByKey } from "@/lib/analytics";
-import { CHART_COLORS } from "@/lib/chart-colors";
+
 import { ROLE_LABEL } from "@/components/shared/status-badge";
 import type { Role } from "@/types/api";
 
-const tooltipStyle = {
-  borderRadius: 8,
-  border: "1px solid var(--color-border)",
-  background: "var(--color-popover)",
-  color: "var(--color-popover-foreground)",
-  fontSize: 12,
-};
+import { ANALYTICS_COLORS as CHART_COLORS } from "@/lib/analytics-colors";
+
+function PeriodSelect({ days, onChange, label }: { days: number; onChange: (days: number) => void; label: string }) {
+  return (
+    <div className="relative shrink-0">
+      <select aria-label={label} value={days} onChange={(event) => onChange(Number(event.target.value))} className="h-8 cursor-pointer appearance-none rounded-md border border-border bg-card py-1 pl-3 pr-8 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {[7, 30, 90].map((period) => <option key={period} value={period}>Last {period} Days</option>)}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3 text-muted-foreground" />
+    </div>
+  );
+}
+
 
 export function AnalyticsPage() {
+  const [growthDays, setGrowthDays] = useState(7);
+  const [activityDays, setActivityDays] = useState(7);
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
   const conceptsQuery = useQuery({
@@ -58,8 +52,11 @@ export function AnalyticsPage() {
   const translations = translationsQuery.data?.content ?? [];
   const pending = pendingQuery.data?.content ?? [];
 
-  const userGrowthSeries = bucketByDate(users, (u) => u.createdAt, "day", 30);
-  const submissionSeries = bucketByDate(pending, (s) => s.createdAt, "day", 30);
+  const userGrowthSeries = bucketByDate(users, (u) => u.createdAt, "day", growthDays);
+  const activityUsers = bucketByDate(users, (u) => u.createdAt, "day", activityDays);
+  const submissionSeries = bucketByDate(pending, (s) => s.createdAt, "day", activityDays).map((bucket, index) => ({
+    ...bucket, users: activityUsers[index].count,
+  }));
   const statusBreakdown = countByKey(users, (u) => u.status);
   const roleBreakdown = countByKey(
     users.flatMap((u) => u.roles.map((r) => ROLE_LABEL[r as Role] ?? r.replace("ROLE_", ""))),
@@ -75,46 +72,34 @@ export function AnalyticsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Analytics"
-        description="Trends and distributions computed from live API data — no simulated numbers."
+        description="Explore account growth, submission activity, and language insights."
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 [&_h3]:font-medium [&_h3]:leading-snug">
         <ChartCard
           title="User Growth"
-          description="New accounts registered per day, last 30 days"
+          actions={<PeriodSelect days={growthDays} onChange={setGrowthDays} label="User growth period" />}
           isLoading={usersQuery.isLoading}
           error={usersQuery.error}
           onRetry={() => usersQuery.refetch()}
           isEmpty={users.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={userGrowthSeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} interval={4} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="count" name="New users" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <VerticalBarChart label="Daily new user registrations" labels={userGrowthSeries.map((d) => d.label)} series={[{ name: "New users", color: CHART_COLORS[0], values: userGrowthSeries.map((d) => d.count) }]} />
         </ChartCard>
 
         <ChartCard
-          title="Pending Submissions Created"
-          description="Daily count of translations submitted and still awaiting review, last 30 days"
-          isLoading={pendingQuery.isLoading}
-          error={pendingQuery.error}
-          onRetry={() => pendingQuery.refetch()}
-          isEmpty={pending.length === 0}
+          title="Activity overview"
+          actions={<PeriodSelect days={activityDays} onChange={setActivityDays} label="Activity period" />}
+          legend={<div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#46a564]" />New users</span>
+            <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#ee78be]" />Pending submissions</span>
+          </div>}
+          isLoading={pendingQuery.isLoading || usersQuery.isLoading}
+          error={pendingQuery.error || usersQuery.error}
+          onRetry={() => { void pendingQuery.refetch(); void usersQuery.refetch(); }}
+          isEmpty={pending.length === 0 && users.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={submissionSeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} interval={4} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="count" name="Submissions" stroke={CHART_COLORS[2]} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <VerticalBarChart label="Daily account and pending submission activity" labels={submissionSeries.map((d) => d.label)} series={[{ name: "New users", color: CHART_COLORS[0], values: submissionSeries.map((d) => d.users) }, { name: "Pending submissions", color: CHART_COLORS[1], values: submissionSeries.map((d) => d.count) }]} stacked />
         </ChartCard>
 
         <ChartCard
@@ -124,17 +109,7 @@ export function AnalyticsPage() {
           onRetry={() => usersQuery.refetch()}
           isEmpty={statusBreakdown.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={statusBreakdown} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>
-                {statusBreakdown.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend verticalAlign="bottom" height={24} />
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+          <VerticalBarChart label="User status breakdown" labels={statusBreakdown.map((d) => d.name)} series={[{ name: "Users", color: CHART_COLORS[2], values: statusBreakdown.map((d) => d.value) }]} />
         </ChartCard>
 
         <ChartCard
@@ -145,15 +120,7 @@ export function AnalyticsPage() {
           onRetry={() => usersQuery.refetch()}
           isEmpty={roleBreakdown.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={roleBreakdown} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={90} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Users" fill={CHART_COLORS[1]} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <DistributionChart label="Role distribution" data={roleBreakdown} color={CHART_COLORS[3]} />
         </ChartCard>
 
         <ChartCard
@@ -163,15 +130,7 @@ export function AnalyticsPage() {
           onRetry={() => usersQuery.refetch()}
           isEmpty={nativeLanguageBreakdown.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={nativeLanguageBreakdown} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={90} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Users" fill={CHART_COLORS[3]} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <VerticalBarChart label="Users by native language" labels={nativeLanguageBreakdown.map((d) => d.name)} series={[{ name: "Users", color: CHART_COLORS[0], values: nativeLanguageBreakdown.map((d) => d.value) }]} multicolor rounded />
         </ChartCard>
 
         <ChartCard
@@ -181,15 +140,7 @@ export function AnalyticsPage() {
           onRetry={() => usersQuery.refetch()}
           isEmpty={preferredLanguageBreakdown.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={preferredLanguageBreakdown} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={90} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Users" fill={CHART_COLORS[4]} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <DistributionChart label="Users by learning language" data={preferredLanguageBreakdown} color={CHART_COLORS[4]} outlined />
         </ChartCard>
 
         <ChartCard
@@ -199,15 +150,7 @@ export function AnalyticsPage() {
           onRetry={() => translationsQuery.refetch()}
           isEmpty={translationsByLanguage.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={translationsByLanguage} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={90} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Translations" fill={CHART_COLORS[0]} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <DistributionChart label="Translations by language" data={translationsByLanguage} color={CHART_COLORS[2]} />
         </ChartCard>
 
         <ChartCard
@@ -217,15 +160,7 @@ export function AnalyticsPage() {
           onRetry={() => conceptsQuery.refetch()}
           isEmpty={conceptsByCategory.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={conceptsByCategory} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={90} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Concepts" fill={CHART_COLORS[2]} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <DistributionChart label="Concepts by category" data={conceptsByCategory} color={CHART_COLORS[7]} />
         </ChartCard>
 
         <ChartCard
@@ -235,38 +170,9 @@ export function AnalyticsPage() {
           onRetry={() => languagesQuery.refetch()}
           isEmpty={languageStatus.length === 0}
         >
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={languageStatus} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>
-                {languageStatus.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend verticalAlign="bottom" height={24} />
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+          <LanguageDonutChart data={languageStatus} />
         </ChartCard>
       </div>
-
-      <Card className="border-dashed">
-        <CardHeader className="flex-row items-start gap-3 space-y-0">
-          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div>
-            <CardTitle>Not available from the current API</CardTitle>
-            <CardDescription className="mt-1">
-              These are intentionally left out rather than filled with placeholder data.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-1.5 text-sm text-muted-foreground">
-          <p>• DAU / WAU / MAU and most-active-hour/day trends — require a platform-wide activity feed; GET /api/v1/activity only returns the signed-in user's own activity.</p>
-          <p>• Approved vs. rejected submission trends — no endpoint lists reviewed submissions, only the pending queue.</p>
-          <p>• Most-searched or most-viewed content — no search/view analytics endpoint exists.</p>
-          <p>• User retention / returning-vs-new cohorts — would need historical login snapshots beyond `lastLoginAt`.</p>
-          <p>See <span className="font-medium text-foreground">docs/BACKEND_GAPS.md</span> for the full list with suggested endpoints.</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

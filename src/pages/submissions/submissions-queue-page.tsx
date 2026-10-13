@@ -1,3 +1,4 @@
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ export function SubmissionsQueuePage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 20);
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: queryKeys.pendingSubmissions(page - 1, pageSize),
     queryFn: () => submissionsApi.listPending({ page: page - 1, size: pageSize }),

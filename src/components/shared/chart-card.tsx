@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { BarChart3 } from "lucide-react";
 
 interface ChartCardProps {
   title: string;
+  className?: string;
+  legend?: ReactNode;
   description?: string;
   isLoading?: boolean;
   error?: unknown;
@@ -19,6 +20,8 @@ interface ChartCardProps {
 
 export function ChartCard({
   title,
+  className,
+  legend,
   description,
   isLoading,
   error,
@@ -29,17 +32,23 @@ export function ChartCard({
   children,
 }: ChartCardProps) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <CardTitle>{title}</CardTitle>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <CardTitle>{title}</CardTitle>
+            {legend}
+          </div>
           {description && <CardDescription className="mt-1">{description}</CardDescription>}
         </div>
         {actions}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-64 w-full" />
+          <div role="status" aria-live="polite" className="flex aspect-[560/260] w-full flex-col items-center justify-center gap-3 text-muted-foreground">
+            <span className="size-6 animate-spin rounded-full border-2 border-border border-t-emerald-500 motion-reduce:animate-none" aria-hidden="true" />
+            <span className="text-xs">Loading chart data…</span>
+          </div>
         ) : error ? (
           <ErrorState error={error} onRetry={onRetry} className="py-10" />
         ) : isEmpty ? (

@@ -1,3 +1,4 @@
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useMemo, useState } from "react";
 
 /**
@@ -7,7 +8,7 @@ import { useMemo, useState } from "react";
  */
 export function usePagination<T>(items: T[], initialPageSize = 10) {
   const [requestedPage, setPage] = useState(1);
-  const [pageSize, setPageSizeState] = useState(initialPageSize);
+  const [pageSize, setPageSizeState] = useState(() => getAdminPreferences().pageSize ?? initialPageSize);
 
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   // Clamp for display/slicing without feeding a setState-in-effect loop; the user's
