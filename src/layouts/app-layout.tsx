@@ -13,7 +13,7 @@ export function AppLayout() {
   }, [preferences.reducedMotion]);
   return (
     <div className="flex h-dvh min-w-0 overflow-hidden" data-compact-tables={preferences.compactTables}>
-      <aside className="hidden h-full w-64 shrink-0 lg:block">
+      <aside className="hidden h-full w-[220px] shrink-0 lg:block">
         <div className="h-full w-full">
           <SidebarContent />
         </div>
@@ -21,8 +21,8 @@ export function AppLayout() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-5 lg:px-6">
-          <div className="mx-auto min-w-0 max-w-[1400px]">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 sm:px-6 lg:px-8">
+          <div className="mx-auto min-w-0 max-w-[1440px]">
             <Suspense fallback={<PageLoading />}><Outlet /></Suspense>
           </div>
         </main>

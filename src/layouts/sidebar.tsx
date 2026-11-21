@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Globe2, LogOut, Loader2 } from "lucide-react";
+import { Globe2, LogOut, Loader2, ChevronRight } from "lucide-react";
 import { NAV_SECTIONS } from "./nav-config";
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/types/api";
 
 function panelLabel(hasRole: (...roles: Role[]) => boolean): string {
@@ -12,6 +12,13 @@ function panelLabel(hasRole: (...roles: Role[]) => boolean): string {
   if (hasRole("ROLE_MODERATOR")) return "Korot Moderator";
   if (hasRole("ROLE_LANGUAGE_REVIEWER")) return "Korot Reviewer";
   return "Korot Admin";
+}
+
+function roleTagLabel(hasRole: (...roles: Role[]) => boolean): string {
+  if (hasRole("ROLE_ADMIN")) return "Admin";
+  if (hasRole("ROLE_MODERATOR")) return "Moderator";
+  if (hasRole("ROLE_LANGUAGE_REVIEWER")) return "Reviewer";
+  return "Admin";
 }
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -34,22 +41,33 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     }
   }
 
+  const userInitials = user ? initials(user.name) : "?";
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-        <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Globe2 className="size-3.5" />
+      {/* Logo / Brand */}
+      <div className="flex h-14 shrink-0 items-center gap-3 px-5 border-b border-sidebar-border">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary shadow-sm">
+          <Globe2 className="size-4 text-primary-foreground" />
         </div>
-        <span className="text-sm font-semibold tracking-tight">{panelLabel(hasRole)}</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold tracking-tight text-sidebar-foreground leading-none">
+            {panelLabel(hasRole)}
+          </p>
+          <p className="mt-0.5 text-[10px] font-medium text-sidebar-muted uppercase tracking-widest">
+            Dashboard
+          </p>
+        </div>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 scrollbar-thin">
+      {/* Navigation */}
+      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-4 scrollbar-thin">
         {NAV_SECTIONS.map((section) => {
           const visibleItems = section.items.filter((item) => hasRole(...item.roles));
           if (visibleItems.length === 0) return null;
           return (
-            <div key={section.label} className="mb-4">
-              <p className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted">
+            <div key={section.label} className="mb-5">
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-muted select-none">
                 {section.label}
               </p>
               <div className="space-y-0.5">
@@ -60,16 +78,31 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-2.5 rounded-md px-2.5 py-1.25 text-sm font-medium outline-none transition-colors",
-                        "focus-visible:ring-2 focus-visible:ring-primary/60",
+                        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all duration-150",
+                        "focus-visible:ring-2 focus-visible:ring-primary/50",
                         isActive
-                          ? "bg-primary/15 text-primary"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
+                          ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)]"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                       )
                     }
                   >
-                    <item.icon className="size-4 shrink-0" />
-                    {item.label}
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                        )}
+                        <item.icon
+                          className={cn(
+                            "size-4 shrink-0 transition-colors",
+                            isActive ? "text-[var(--sidebar-active-fg)]" : "text-sidebar-muted group-hover:text-sidebar-foreground",
+                          )}
+                        />
+                        <span className="truncate">{item.label}</span>
+                        {isActive && (
+                          <ChevronRight className="ml-auto size-3.5 opacity-50" />
+                        )}
+                      </>
+                    )}
                   </NavLink>
                 ))}
               </div>
@@ -78,15 +111,35 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-sidebar-border px-4 py-3">
-        <div className="min-w-0">
-          <p className="truncate text-xs text-sidebar-muted">Signed in as</p>
-          <p className="truncate text-sm font-medium">{user?.name}</p>
+      {/* User Footer */}
+      <div className="shrink-0 border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+          {/* Avatar */}
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary ring-2 ring-primary/30">
+            {userInitials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-sidebar-foreground leading-tight">
+              {user?.name ?? "—"}
+            </p>
+            <p className="truncate text-[10px] text-sidebar-muted mt-0.5">
+              {roleTagLabel(hasRole)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            aria-label={signingOut ? "Signing out" : "Sign out"}
+            className="ml-auto flex shrink-0 size-7 items-center justify-center rounded-md text-sidebar-muted outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-wait disabled:opacity-40"
+          >
+            {signingOut ? (
+              <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <LogOut className="size-3.5" />
+            )}
+          </button>
         </div>
-        <button type="button" onClick={handleSignOut} disabled={signingOut} aria-label={signingOut ? "Signing out" : "Sign out"} className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-2 text-xs text-sidebar-foreground/80 outline-none transition-colors hover:bg-sidebar-accent hover:text-white focus-visible:ring-2 focus-visible:ring-primary/60 disabled:cursor-wait disabled:opacity-50">
-          {signingOut ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <LogOut className="size-3.5" aria-hidden="true" />}
-          <span>{signingOut ? "Signing out…" : "Sign out"}</span>
-        </button>
       </div>
     </div>
   );
