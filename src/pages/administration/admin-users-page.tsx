@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Eye, Clock } from "lucide-react";
-import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -15,7 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { RoleBadge, UserStatusBadge } from "@/components/shared/status-badge";
 import { adminUsersApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
-import { initials } from "@/lib/utils";
+import { initials, formatDateOnly, formatTimeOnly } from "@/lib/utils";
 
 export function AdminUsersPage() {
   const { data, isLoading, isFetching, error, refetch } = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
@@ -89,11 +88,11 @@ export function AdminUsersPage() {
                   {user.lastLoginAt ? (
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium text-foreground">
-                        {format(new Date(user.lastLoginAt), "MMM d, yyyy")}
+                        {formatDateOnly(user.lastLoginAt)}
                       </p>
                       <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Clock className="size-3 text-muted-foreground/70" />
-                        {format(new Date(user.lastLoginAt), "h:mm a")}
+                        {formatTimeOnly(user.lastLoginAt)}
                       </p>
                     </div>
                   ) : (

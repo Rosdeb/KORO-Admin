@@ -17,7 +17,7 @@ import { activityApi, statisticsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { countByKey } from "@/lib/analytics";
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/utils";
 import { Globe, Laptop, Smartphone, Server, HelpCircle, Calendar as CalendarIcon, X } from "lucide-react";
 
 /**
@@ -315,9 +315,7 @@ export function MyActivityPage() {
 
                         {/* When */}
                         <TableCell className="text-muted-foreground text-xs text-right whitespace-nowrap">
-                          {log.createdAt
-                            ? format(new Date(log.createdAt), "MMM d, yyyy · h:mm a")
-                            : "—"}
+                          {formatDateTime(log.createdAt)}
                         </TableCell>
                       </TableRow>
                     );

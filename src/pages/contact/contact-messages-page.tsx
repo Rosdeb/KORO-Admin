@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/utils";
 import {
   Mail,
   Inbox,
@@ -399,9 +399,7 @@ export function ContactMessagesPage() {
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">
-                        {msg.createdAt
-                          ? format(new Date(msg.createdAt), "MMM d, yyyy h:mm a")
-                          : "—"}
+                        {formatDateTime(msg.createdAt, "MMM d, yyyy h:mm a")}
                       </TableCell>
 
                       <TableCell className="text-right">
@@ -549,9 +547,7 @@ export function ContactMessagesPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="size-3.5" />
-                    {activeDetail.createdAt
-                      ? format(new Date(activeDetail.createdAt), "PPpp")
-                      : "—"}
+                    {formatDateTime(activeDetail.createdAt, "PPpp")}
                   </div>
                 </div>
                 {activeDetail.userId && (
@@ -590,7 +586,7 @@ export function ContactMessagesPage() {
                     </div>
                     {activeDetail.repliedAt && (
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(activeDetail.repliedAt), "PPpp")}
+                        {formatDateTime(activeDetail.repliedAt, "PPpp")}
                       </span>
                     )}
                   </div>

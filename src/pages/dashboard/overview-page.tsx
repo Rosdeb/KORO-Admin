@@ -2,9 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   Users, UserCheck, ClipboardCheck, Languages, BookOpen, Type,
-  ArrowRight, RefreshCw, Activity, Sparkles,
+  ArrowRight, RefreshCw, Activity,
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,7 @@ import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi
 import { queryKeys } from "@/lib/query-keys";
 import { periodGrowth } from "@/lib/analytics";
 import { StatisticsSummary } from "@/components/shared/statistics-summary";
-import { formatDistanceToNow } from "date-fns";
-import { useAuth } from "@/hooks/use-auth";
+import { formatRelativeTime } from "@/lib/utils";
 
 const STAT_ICON_COLORS: Record<string, string> = {
   users:        "bg-blue-500/12 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400",
@@ -32,7 +30,6 @@ const STAT_ICON_COLORS: Record<string, string> = {
 };
 
 export function OverviewPage() {
-  const { user } = useAuth();
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
@@ -72,55 +69,18 @@ export function OverviewPage() {
     translationsCountQuery.refetch();
   }
 
-  const firstName = user?.name?.split(" ")[0] ?? "Admin";
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
   if (anyError) {
     return <ErrorState error={anyError} onRetry={refetchAll} className="mt-10" />;
   }
 
   return (
     <div className="admin-workspace-enter space-y-7">
-
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/90 via-primary to-emerald-600 p-6 text-primary-foreground shadow-md">
-        <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-primary-foreground/80 text-sm font-medium mb-1">
-              <Sparkles className="size-3.5" />
-              {greeting}
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight">{firstName} 👋</h2>
-            <p className="mt-1 text-sm text-primary-foreground/75">
-              Here's what's happening on the Korot platform today.
-            </p>
-          </div>
-          {pendingCount > 0 && (
-            <Button asChild size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm shrink-0">
-              <Link to="/submissions">
-                Review {pendingCount} pending {pendingCount === 1 ? "submission" : "submissions"}
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          )}
-        </div>
-        {/* decorative circles */}
-        <div className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-12 right-24 size-36 rounded-full bg-white/5" />
+      <div className="flex items-center justify-end">
+        <Button variant="outline" size="sm" onClick={refetchAll} className="gap-1.5">
+          <RefreshCw className="size-3.5" />
+          Refresh
+        </Button>
       </div>
-
-      {/* Page header row */}
-      <PageHeader
-        title="Overview"
-        description="Platform-wide snapshot computed live from the Koro API."
-        actions={
-          <Button variant="outline" size="sm" onClick={refetchAll} className="gap-1.5">
-            <RefreshCw className="size-3.5" />
-            Refresh
-          </Button>
-        }
-      />
 
       {/* Stat grid — primary 4 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -248,7 +208,7 @@ export function OverviewPage() {
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {s.submittedBy?.name} · {s.sourceLanguage?.name} ·{" "}
-                          {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                          {formatRelativeTime(s.createdAt)}
                         </p>
                       </div>
                     </div>

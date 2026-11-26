@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/utils";
 import {
   Gauge,
   RotateCcw,
@@ -419,7 +419,7 @@ export function UserRateLimitDialog({
             <Clock className="size-3.5 shrink-0 text-muted-foreground/70" />
             <span className="truncate">
               {rateLimit?.lastSearchAt
-                ? `Last: ${format(new Date(rateLimit.lastSearchAt), "MMM d, yyyy · h:mm a")}`
+                ? `Last: ${formatDateTime(rateLimit.lastSearchAt)}`
                 : "No searches recorded"}
             </span>
           </div>

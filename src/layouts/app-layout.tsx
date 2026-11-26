@@ -1,5 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { useAdminPreferences } from "@/lib/admin-preferences";
+import { useColorTheme } from "@/hooks/use-color-theme";
 import { PageLoading } from "@/components/shared/page-loading";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { Outlet } from "react-router-dom";
@@ -8,6 +9,7 @@ import { Topbar } from "./topbar";
 
 export function AppLayout() {
   const preferences = useAdminPreferences();
+  useColorTheme();
   useEffect(() => {
     document.documentElement.dataset.reducedMotion = String(preferences.reducedMotion);
     return () => { delete document.documentElement.dataset.reducedMotion; };

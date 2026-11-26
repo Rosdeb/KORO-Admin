@@ -47,8 +47,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
       {/* Logo / Brand */}
       <div className="flex h-14 shrink-0 items-center gap-3 px-5 border-b border-sidebar-border">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary shadow-sm">
-          <Globe2 className="size-4 text-primary-foreground" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)] shadow-sm">
+          <Globe2 className="size-4 text-[var(--sidebar-active-fg)]" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-bold tracking-tight text-sidebar-foreground leading-none">
@@ -79,17 +79,17 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     className={({ isActive }) =>
                       cn(
                         "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all duration-150",
-                        "focus-visible:ring-2 focus-visible:ring-primary/50",
+                        "focus-visible:ring-2 focus-visible:ring-[var(--sidebar-active-bg)]/50",
                         isActive
-                          ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)]"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                          ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)] font-semibold shadow-sm"
+                          : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                       )
                     }
                   >
                     {({ isActive }) => (
                       <>
                         {isActive && (
-                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                          <span className="absolute left-1 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-current opacity-90" />
                         )}
                         <item.icon
                           className={cn(
@@ -99,7 +99,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                         />
                         <span className="truncate">{item.label}</span>
                         {isActive && (
-                          <ChevronRight className="ml-auto size-3.5 opacity-50" />
+                          <ChevronRight className="ml-auto size-3.5 opacity-75" />
                         )}
                       </>
                     )}
@@ -115,7 +115,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="shrink-0 border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2">
           {/* Avatar */}
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary ring-2 ring-primary/30">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--sidebar-active-bg)]/20 text-xs font-bold text-sidebar-foreground ring-1 ring-[var(--sidebar-active-bg)]/40">
             {userInitials}
           </div>
           <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={handleSignOut}
             disabled={signingOut}
             aria-label={signingOut ? "Signing out" : "Sign out"}
-            className="ml-auto flex shrink-0 size-7 items-center justify-center rounded-md text-sidebar-muted outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-wait disabled:opacity-40"
+            className="ml-auto flex shrink-0 size-7 items-center justify-center rounded-md text-sidebar-muted outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-[var(--sidebar-active-bg)]/50 disabled:cursor-wait disabled:opacity-40"
           >
             {signingOut ? (
               <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />

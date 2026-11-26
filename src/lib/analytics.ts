@@ -7,14 +7,9 @@ import {
   isWithinInterval,
   format,
 } from "date-fns";
+import { parseDate } from "./utils";
 
 /** All trend math here is derived from real `createdAt`/timestamp fields — never fabricated. */
-
-export function parseDate(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
 
 export function countSince<T>(items: T[], dateField: (item: T) => string | null | undefined, since: Date): number {
   return items.filter((item) => {

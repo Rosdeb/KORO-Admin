@@ -190,7 +190,7 @@ export function GitHubActivityCalendar({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-sm space-y-3",
+        "rounded-xl bg-card p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-shadow space-y-3",
         className,
       )}
     >

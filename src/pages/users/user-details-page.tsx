@@ -20,8 +20,7 @@ import { adminUsersApi, activityApi, platformConfigApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuth } from "@/hooks/use-auth";
-import { initials, cn } from "@/lib/utils";
-import { format, formatDistanceToNow } from "date-fns";
+import { initials, cn, formatDateTime, formatDateOnly, formatRelativeTime } from "@/lib/utils";
 import type { Role, UserResponse } from "@/types/api";
 
 const ASSIGNABLE_ROLES: { role: Role; label: string; description: string }[] = [
@@ -147,7 +146,7 @@ export function UserDetailsPage() {
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="size-3.5" /> Registered
               </span>
-              <span>{new Date(user.createdAt).toLocaleDateString()}</span>
+              <span>{formatDateOnly(user.createdAt)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-muted-foreground">
@@ -157,10 +156,10 @@ export function UserDetailsPage() {
                 {user.lastLoginAt ? (
                   <>
                     <span className="font-medium text-foreground">
-                      {format(new Date(user.lastLoginAt), "MMM d, yyyy · h:mm a")}
+                      {formatDateTime(user.lastLoginAt)}
                     </span>
                     <span className="block text-[11px] text-muted-foreground">
-                      ({formatDistanceToNow(new Date(user.lastLoginAt), { addSuffix: true })})
+                      ({formatRelativeTime(user.lastLoginAt)})
                     </span>
                   </>
                 ) : (
@@ -388,9 +387,7 @@ export function UserDetailsPage() {
                 <span>
                   Last search recorded:{" "}
                   {rateLimitQuery.data.lastSearchAt
-                    ? formatDistanceToNow(new Date(rateLimitQuery.data.lastSearchAt), {
-                        addSuffix: true,
-                      })
+                    ? formatRelativeTime(rateLimitQuery.data.lastSearchAt)
                     : "Never"}
                 </span>
                 <span className="text-[11px]">
@@ -437,7 +434,7 @@ export function UserDetailsPage() {
                 <li key={log.id} className="relative text-sm">
                   <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-primary" />
                   <p className="font-medium">{log.description ?? log.activityType}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(log.createdAt)}</p>
                 </li>
               ))}
             </ol>

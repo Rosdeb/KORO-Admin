@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Download, Eye, MoreHorizontal, ShieldCheck, UserX, UserCheck2, Gauge, Clock } from "lucide-react";
-import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
@@ -30,7 +29,7 @@ import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
 import { usePagination } from "@/hooks/use-pagination";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { downloadCsv, initials, formatNumber } from "@/lib/utils";
+import { downloadCsv, initials, formatNumber, formatDateOnly, formatTimeOnly } from "@/lib/utils";
 import type { UserResponse, UserStatus } from "@/types/api";
 
 const STATUS_OPTIONS: (UserStatus | "ALL")[] = ["ALL", "ACTIVE", "INACTIVE", "SUSPENDED"];
@@ -227,17 +226,17 @@ export function UsersListPage() {
                     <UserStatusBadge status={user.status} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {formatDateOnly(user.createdAt)}
                   </TableCell>
                   <TableCell>
                     {user.lastLoginAt ? (
                       <div className="space-y-0.5">
                         <p className="text-xs font-medium text-foreground">
-                          {format(new Date(user.lastLoginAt), "MMM d, yyyy")}
+                          {formatDateOnly(user.lastLoginAt)}
                         </p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                           <Clock className="size-3 text-muted-foreground/70" />
-                          {format(new Date(user.lastLoginAt), "h:mm a")}
+                          {formatTimeOnly(user.lastLoginAt)}
                         </p>
                       </div>
                     ) : (

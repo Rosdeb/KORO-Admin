@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, CheckCheck, X, Volume2, Quote, StickyNote, Eye, Loader2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelativeTime } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { RefreshButton } from "@/components/shared/refresh-button";
@@ -238,7 +238,7 @@ export function SubmissionsQueuePage() {
                   <TableCell>{s.englishTranslation}</TableCell>
                   <TableCell className="text-muted-foreground">{s.submittedBy?.name}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                    {formatRelativeTime(s.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

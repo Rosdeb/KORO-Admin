@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Bell } from "lucide-react";
+import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Bell, Palette, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -16,11 +16,13 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { SidebarContent } from "./sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
-import { initials } from "@/lib/utils";
+import { useColorTheme } from "@/hooks/use-color-theme";
+import { cn, initials } from "@/lib/utils";
 
 export function Topbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { themeId, setColorTheme, themes, currentTheme } = useColorTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -55,6 +57,65 @@ export function Topbar() {
 
       {/* Right actions */}
       <div className="flex shrink-0 items-center gap-1">
+        {/* Color Palette Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Sidebar and accent color combinations"
+              title={`Sidebar color: ${currentTheme.name}`}
+              className="relative flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Palette className="size-4" />
+              <span
+                className="absolute bottom-1.5 right-1.5 size-2 rounded-full ring-1 ring-background shadow-xs"
+                style={{ backgroundColor: currentTheme.sidebarActiveBg }}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 max-h-[75vh] overflow-y-auto">
+            <DropdownMenuLabel className="pb-1.5">
+              <div className="text-xs font-semibold text-foreground">Color Scheme (12 Combos)</div>
+              <p className="text-[11px] font-normal text-muted-foreground mt-0.5">
+                Customize sidebar & accent palette
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="p-1 space-y-1">
+              {themes.map((t) => {
+                const isActive = themeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setColorTheme(t.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors text-left",
+                      isActive
+                        ? "bg-accent text-accent-foreground font-semibold shadow-xs"
+                        : "hover:bg-muted text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center -space-x-1 shrink-0">
+                        {t.previewColors.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="size-3.5 rounded-full ring-1 ring-background shadow-xs"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      <span className="truncate">{t.name}</span>
+                    </div>
+                    {isActive && <Check className="size-3.5 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Theme toggle */}
         <Button
           variant="ghost"

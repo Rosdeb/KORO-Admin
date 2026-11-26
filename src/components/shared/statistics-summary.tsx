@@ -22,7 +22,7 @@ export function StatisticsSummary({ data, path = "" }: { data: Record<string, un
     {Object.entries(data).map(([key, value]) => {
       const Icon = metricIcon(`${path} ${key}`);
       const nested = value !== null && typeof value === "object";
-      return <div key={key} className={`min-w-0 rounded-lg border border-border/70 bg-muted/20 p-2.5 ${nested ? "col-span-full" : ""}`}>
+      return <div key={key} className={`min-w-0 rounded-lg bg-muted/30 shadow-xs p-2.5 ${nested ? "col-span-full" : ""}`}>
         <dt className="flex items-start gap-1.5 text-xs leading-4 text-muted-foreground">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-500"><Icon className="size-3.5" /></span>
           <span className="min-w-0 break-words pt-1">{humanizeKey(key)}</span>

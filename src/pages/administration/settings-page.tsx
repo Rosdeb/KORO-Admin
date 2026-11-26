@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ROLE_LABEL } from "@/components/shared/status-badge";
 import { useTheme } from "@/hooks/use-theme";
+import { useColorTheme } from "@/hooks/use-color-theme";
+import { DEFAULT_THEME_ID } from "@/lib/color-themes";
 import { API_BASE_URL } from "@/api/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getAdminPreferences, setAdminPreferences, resetAdminPreferences, useAdminPreferences, START_PAGES } from "@/lib/admin-preferences";
@@ -33,6 +35,7 @@ const selectStyle = "h-8 max-w-full rounded-md border border-input bg-card px-2.
 
 export function SettingsPage() {
   const { preference, setTheme } = useTheme();
+  const { themeId, setColorTheme, themes, currentTheme } = useColorTheme();
   const preferences = useAdminPreferences();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -49,7 +52,7 @@ export function SettingsPage() {
     finally { setRefreshing(false); }
   }
   function exportPreferences() {
-    const file = new Blob([JSON.stringify({ version: 1, theme: preference, ...getAdminPreferences() }, null, 2)], { type: "application/json" });
+    const file = new Blob([JSON.stringify({ version: 1, theme: preference, colorTheme: themeId, ...getAdminPreferences() }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;
@@ -66,6 +69,7 @@ export function SettingsPage() {
     if (dialog === "reset") {
       resetAdminPreferences();
       setTheme("system");
+      setColorTheme(DEFAULT_THEME_ID);
       toast.success("Preferences reset to defaults");
     } else if (dialog === "logout") {
       await queryClient.cancelQueries();
@@ -85,6 +89,54 @@ export function SettingsPage() {
             <fieldset><legend className="mb-2 text-xs font-medium">Theme</legend><div className="grid grid-cols-3 gap-2">
               {([{ value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }, { value: "system", label: "System", icon: Monitor }] as const).map((option) => <button key={option.value} type="button" aria-pressed={preference === option.value} onClick={() => setTheme(option.value)} className={`flex items-center justify-center gap-2 rounded-lg border px-2 py-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${preference === option.value ? "border-primary/50 bg-primary/5 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/40"}`}><option.icon className="size-4" />{option.label}</button>)}
             </div><p className="mt-2 text-xs text-muted-foreground">System follows your device’s appearance.</p></fieldset>
+
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <legend className="text-xs font-medium">Sidebar & Accent Palettes (12 Colors)</legend>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  Active: {currentTheme.name}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Choose a coordinated color combination for the sidebar and active indicators, including Golden Sand (<code className="text-foreground font-mono font-semibold">#E5CD82</code>) and Cream (<code className="text-foreground font-mono font-semibold">#FFF2B4</code>).
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                {themes.map((t) => {
+                  const isActive = themeId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setColorTheme(t.id)}
+                      className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-left text-xs transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive
+                          ? "border-primary bg-primary/5 shadow-xs"
+                          : "border-border bg-card hover:bg-muted/30"
+                      }`}
+                    >
+                      <div className="flex items-center -space-x-1.5 pt-0.5 shrink-0">
+                        {t.previewColors.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="size-4 rounded-full ring-2 ring-background shadow-xs"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-semibold truncate text-foreground">{t.name}</span>
+                          {isActive && <Check className="size-3.5 text-primary shrink-0" />}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                          {t.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="divide-y divide-border border-t border-border">
               <SettingRow id="compact-tables" title="Compact tables" description="Use tighter rows to fit more information on screen."><Switch id="compact-tables" checked={preferences.compactTables} onCheckedChange={(compactTables) => setAdminPreferences({ compactTables })} /></SettingRow>
               <SettingRow id="reduced-motion" title="Reduce motion" description="Minimize animations and transitions in the admin panel."><Switch id="reduced-motion" checked={preferences.reducedMotion} onCheckedChange={(reducedMotion) => setAdminPreferences({ reducedMotion })} /></SettingRow>
