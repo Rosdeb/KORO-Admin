@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
+      - "*"
   workflow_dispatch:
 
-# Prevent concurrent deployments from overlapping
+# Prevent concurrent deployments on the same branch or tag
 concurrency:
-  group: pages-deploy
+  group: pages-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
