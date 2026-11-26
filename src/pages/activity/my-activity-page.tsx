@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { getAdminPreferences } from "@/lib/admin-preferences";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -9,15 +9,16 @@ import { Pagination } from "@/components/shared/pagination";
 import { GitHubActivityCalendar } from "@/components/shared/github-activity-calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { activityApi } from "@/api";
+import { activityApi, statisticsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { Globe, Laptop, Smartphone, Server, HelpCircle, X } from "lucide-react";
-import { getAdminPreferences } from "@/lib/admin-preferences";
+import { countByKey } from "@/lib/analytics";
 import { format } from "date-fns";
+import { Globe, Laptop, Smartphone, Server, HelpCircle, Calendar as CalendarIcon, X } from "lucide-react";
 
 /**
  * Parses raw device strings/User-Agents into clean labels & icons
@@ -55,89 +56,62 @@ function parseDevice(deviceString?: string | null) {
 }
 
 export function MyActivityPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const dateParam = searchParams.get("date") ?? null;
-
-  const [selectedDate, setSelectedDate] = useState<string | null>(dateParam);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 10);
+
+  // Use the standard, safe pagination parameters expected by the backend
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: [...queryKeys.activity, from, to, page - 1, pageSize],
+    queryFn: () =>
+      activityApi.list({
+        from: from || undefined,
+        to: to || undefined,
+        page: page - 1,
+        size: pageSize,
+      }),
+  });
+
+  const statsQuery = useQuery({
+    queryKey: queryKeys.activityStatistics,
+    queryFn: statisticsApi.activity,
+  });
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 15);
-
-  // Fetch full activity dataset for both the heatmap and the table
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: [...queryKeys.activity, "all"],
-    queryFn: () => activityApi.list({ page: 0, size: 500 }),
-    staleTime: 30_000,
-  });
-
-  const allActivities = useMemo(() => data?.content ?? [], [data]);
-
-  // Extract distinct activity types for the filter dropdown
-  const activityTypes = useMemo(() => {
-    const set = new Set<string>();
-    for (const act of allActivities) {
-      if (act.activityType) set.add(act.activityType);
-    }
-    return Array.from(set).sort();
-  }, [allActivities]);
-
-  // Handle calendar cell click
-  const handleCalendarSelect = (dateStr: string | null) => {
-    setSelectedDate(dateStr);
-    setPage(1);
-    if (dateStr) {
-      setSearchParams({ date: dateStr });
-    } else {
-      setSearchParams({});
-    }
-  };
-
-  // Filter activities reliably client-side
-  const filteredActivities = useMemo(() => {
-    let list = allActivities;
-
-    if (selectedDate) {
-      list = list.filter((a) => a.createdAt && a.createdAt.startsWith(selectedDate));
-    }
+  // Filter client-side by activity type and search query
+  const filtered = useMemo(() => {
+    let list = data?.content ?? [];
 
     if (selectedType) {
-      list = list.filter(
-        (a) => a.activityType && a.activityType.toLowerCase() === selectedType.toLowerCase(),
-      );
+      list = list.filter((a) => a.activityType.toLowerCase() === selectedType.toLowerCase());
     }
 
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       list = list.filter(
         (a) =>
-          (a.activityType && a.activityType.toLowerCase().includes(q)) ||
-          (a.description && a.description.toLowerCase().includes(q)),
+          a.activityType.toLowerCase().includes(q) ||
+          (a.description ?? "").toLowerCase().includes(q),
       );
     }
 
     return list;
-  }, [allActivities, selectedDate, selectedType, debouncedSearch]);
+  }, [data, debouncedSearch, selectedType]);
 
-  // Client-side pagination
-  const totalElements = filteredActivities.length;
-  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
-  const clampedPage = Math.min(page, totalPages);
-  const paginatedList = useMemo(() => {
-    const start = (clampedPage - 1) * pageSize;
-    return filteredActivities.slice(start, start + pageSize);
-  }, [filteredActivities, clampedPage, pageSize]);
+  const byType = useMemo(() => countByKey(data?.content ?? [], (a) => a.activityType), [data]);
 
-  const hasActiveFilters = Boolean(selectedDate || selectedType || search.trim());
+  const hasFilters = Boolean(from || to || selectedType || search);
 
   const handleResetFilters = () => {
-    setSelectedDate(null);
+    setFrom("");
+    setTo("");
     setSelectedType(null);
     setSearch("");
     setPage(1);
-    setSearchParams({});
   };
 
   if (error) {
@@ -146,32 +120,46 @@ export function MyActivityPage() {
 
   return (
     <div className="space-y-4">
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
+      {/* Clean Minimal Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-foreground">My Activity</h1>
           <p className="text-xs text-muted-foreground">
-            Personal audit history and contributions on the platform
+            Audit history of your personal platform actions and edits
           </p>
         </div>
 
-        <RefreshButton
-          onRefresh={() => void refetch()}
-          isRefreshing={isFetching}
-        />
+        <div className="flex items-center gap-2">
+          {data?.totalElements !== undefined && (
+            <Badge variant="secondary" className="text-xs font-mono">
+              {data.totalElements.toLocaleString()} recorded
+            </Badge>
+          )}
+
+          <RefreshButton
+            onRefresh={() => {
+              void refetch();
+              void statsQuery.refetch();
+            }}
+            isRefreshing={isFetching || statsQuery.isFetching}
+          />
+        </div>
       </div>
 
-      {/* Clean GitHub Activity Calendar */}
+      {/* Clean Minimal Heatmap (uses existing page data safely) */}
       <GitHubActivityCalendar
-        activities={allActivities}
+        activities={data?.content ?? []}
         isLoading={isLoading}
-        weeksToShow={28}
-        selectedDate={selectedDate}
-        onSelectDate={handleCalendarSelect}
-        title="Contribution Activity"
+        weeksToShow={22}
+        title="Recent Activity Pattern"
+        onSelectDate={(dateStr) => {
+          if (dateStr) {
+            setSearch(dateStr);
+          }
+        }}
       />
 
-      {/* Minimal Inline Filter Toolbar (No nested cards) */}
+      {/* Minimal Inline Filter Row (No bulky card wrapper) */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
         <div className="flex items-center gap-2 flex-1 max-w-sm">
           <SearchInput
@@ -185,8 +173,9 @@ export function MyActivityPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          {activityTypes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Activity Type Dropdown (cleaner than rows of pills) */}
+          {byType.length > 0 && (
             <Select
               value={selectedType ?? "ALL"}
               onValueChange={(val) => {
@@ -194,21 +183,50 @@ export function MyActivityPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-8 text-xs w-[140px] font-medium">
+              <SelectTrigger className="h-8 text-xs w-[140px]">
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Types</SelectItem>
-                {activityTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {byType.map((t) => (
+                  <SelectItem key={t.name} value={t.name}>
+                    {t.name} ({t.value})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
 
-          {hasActiveFilters && (
+          {/* Compact Date Range Pickers */}
+          <div className="flex items-center gap-1.5 rounded-md border border-border/70 bg-muted/20 px-2 py-1 text-xs">
+            <CalendarIcon className="size-3 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground">From:</span>
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 rounded-md border border-border/70 bg-muted/20 px-2 py-1 text-xs">
+            <CalendarIcon className="size-3 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground">To:</span>
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
+            />
+          </div>
+
+          {hasFilters && (
             <button
               type="button"
               onClick={handleResetFilters}
@@ -221,7 +239,7 @@ export function MyActivityPage() {
         </div>
       </div>
 
-      {/* Activity Log Table */}
+      {/* Main Activity Table Card */}
       <Card className="overflow-hidden border-border/80 shadow-sm">
         <CardContent className="p-0">
           {isLoading ? (
@@ -230,14 +248,14 @@ export function MyActivityPage() {
                 <Skeleton key={i} className="h-10 w-full rounded-md" />
               ))}
             </div>
-          ) : filteredActivities.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="p-8">
               <EmptyState
-                title="No activity records found"
+                title="No activity found"
                 description={
-                  hasActiveFilters
-                    ? "Try clearing the active filters to see all recorded activities."
-                    : "Your actions will appear here once you make changes or approvals."
+                  hasFilters
+                    ? "Try clearing or widening your filters."
+                    : "Actions you take on the platform will be logged here."
                 }
               />
             </div>
@@ -246,15 +264,15 @@ export function MyActivityPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead className="w-[170px] text-xs">Action Type</TableHead>
+                    <TableHead className="w-[170px] text-xs">Type</TableHead>
                     <TableHead className="text-xs">Description</TableHead>
                     <TableHead className="w-[160px] text-xs">Device</TableHead>
                     <TableHead className="w-[130px] text-xs">IP Address</TableHead>
-                    <TableHead className="w-[160px] text-right text-xs">When</TableHead>
+                    <TableHead className="w-[170px] text-right text-xs">When</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedList.map((log) => {
+                  {filtered.map((log) => {
                     const deviceMeta = parseDevice(log.device);
                     const DeviceIcon = deviceMeta.icon;
 
@@ -309,12 +327,12 @@ export function MyActivityPage() {
 
               <div className="border-t border-border/60 p-3 bg-muted/10">
                 <Pagination
-                  page={clampedPage}
+                  page={page}
                   pageSize={pageSize}
-                  total={totalElements}
-                  onPageChange={(p) => setPage(p)}
-                  onPageSizeChange={(s) => {
-                    setPageSize(s);
+                  total={data?.totalElements ?? 0}
+                  onPageChange={setPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
                     setPage(1);
                   }}
                 />
