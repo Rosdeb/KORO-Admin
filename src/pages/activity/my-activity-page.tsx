@@ -171,12 +171,14 @@ import { getAdminPreferences } from "@/lib/admin-preferences";
 
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Pagination } from "@/components/shared/pagination";
+import { GitHubActivityCalendar } from "@/components/shared/github-activity-calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -226,12 +228,16 @@ function parseDevice(deviceString?: string | null) {
 }
 
 export function MyActivityPage() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialDate = searchParams.get("date") ?? "";
+
+  const [from, setFrom] = useState(initialDate);
+  const [to, setTo] = useState(initialDate);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 10);
 
+  // Paginated activities for the table
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: [...queryKeys.activity, from, to, page - 1, pageSize],
     queryFn: () =>
@@ -242,7 +248,29 @@ export function MyActivityPage() {
         size: pageSize,
       }),
   });
+
+  // Dedicated query for the GitHub contribution calendar (up to 500 recent items)
+  const calendarActivityQuery = useQuery({
+    queryKey: [...queryKeys.activity, "calendar"],
+    queryFn: () => activityApi.list({ page: 0, size: 500 }),
+    staleTime: 60_000,
+  });
+
   const statsQuery = useQuery({ queryKey: queryKeys.activityStatistics, queryFn: statisticsApi.activity });
+
+  const handleCalendarDateSelect = (dateStr: string | null) => {
+    if (dateStr) {
+      setFrom(dateStr);
+      setTo(dateStr);
+      setPage(1);
+      setSearchParams({ date: dateStr });
+    } else {
+      setFrom("");
+      setTo("");
+      setPage(1);
+      setSearchParams({});
+    }
+  };
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search);
@@ -297,11 +325,24 @@ export function MyActivityPage() {
             onRefresh={() => {
               void refetch();
               void statsQuery.refetch();
+              void calendarActivityQuery.refetch();
             }}
-            isRefreshing={isFetching || statsQuery.isFetching}
+            isRefreshing={isFetching || statsQuery.isFetching || calendarActivityQuery.isFetching}
           />
         </div>
       </div>
+
+      {/* GitHub-style Contribution Heatmap */}
+      <GitHubActivityCalendar
+        activities={calendarActivityQuery.data?.content ?? data?.content ?? []}
+        isLoading={calendarActivityQuery.isLoading}
+        weeksToShow={32}
+        selectedDate={from && from === to ? from : null}
+        onSelectDate={handleCalendarDateSelect}
+        title="Contribution Activity"
+        description="Daily actions recorded across KORO — reviews, edits, and platform interactions."
+        showStreaks
+      />
 
       {/* Toolbar Controls */}
       <Card className="shadow-sm">

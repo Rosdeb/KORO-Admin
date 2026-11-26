@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Users, UserCheck, ClipboardCheck, Languages, BookOpen, Type,
   ArrowRight, RefreshCw, Activity, Sparkles,
@@ -13,10 +13,11 @@ import { ErrorState } from "@/components/shared/error-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubmissionStatusBadge } from "@/components/shared/status-badge";
-import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi, statisticsApi, translationsApi } from "@/api";
+import { adminUsersApi, languagesApi, categoriesApi, conceptsApi, submissionsApi, statisticsApi, translationsApi, activityApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { periodGrowth } from "@/lib/analytics";
 import { StatisticsSummary } from "@/components/shared/statistics-summary";
+import { GitHubActivityCalendar } from "@/components/shared/github-activity-calendar";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -33,6 +34,7 @@ const STAT_ICON_COLORS: Record<string, string> = {
 
 export function OverviewPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const usersQuery = useQuery({ queryKey: queryKeys.adminUsers, queryFn: adminUsersApi.list });
   const languagesQuery = useQuery({ queryKey: queryKeys.languages, queryFn: languagesApi.list });
   const categoriesQuery = useQuery({ queryKey: queryKeys.categories, queryFn: categoriesApi.list });
@@ -48,6 +50,11 @@ export function OverviewPage() {
   const translationsCountQuery = useQuery({
     queryKey: queryKeys.translationsCount,
     queryFn: () => translationsApi.count(),
+  });
+  const activityQuery = useQuery({
+    queryKey: [...queryKeys.activity, "dashboard-overview"],
+    queryFn: () => activityApi.list({ page: 0, size: 250 }),
+    staleTime: 60_000,
   });
 
   const anyError =
@@ -70,6 +77,7 @@ export function OverviewPage() {
     pendingQuery.refetch();
     rawStatsQuery.refetch();
     translationsCountQuery.refetch();
+    activityQuery.refetch();
   }
 
   const firstName = user?.name?.split(" ")[0] ?? "Admin";
@@ -189,6 +197,23 @@ export function OverviewPage() {
           isLoading={translationsCountQuery.isLoading}
         />
       </div>
+
+      {/* Admin Contribution Activity Heatmap */}
+      <GitHubActivityCalendar
+        activities={activityQuery.data?.content ?? []}
+        isLoading={activityQuery.isLoading}
+        weeksToShow={26}
+        title="My Activity"
+        description="Your contribution activity across KORO Admin. Click any day to view detailed actions."
+        onSelectDate={(dateStr) => {
+          if (dateStr) {
+            navigate(`/activity?date=${dateStr}`);
+          } else {
+            navigate("/activity");
+          }
+        }}
+        compact
+      />
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
