@@ -41,4 +41,15 @@ export const translationsApi = {
   async remove(id: string): Promise<void> {
     await httpClient.delete(`/api/v1/admin/translations/${id}`);
   },
+  /**
+   * Rebuild the in-memory search index (binary-search & sentence tokens)
+   * from the latest MongoDB state.
+   * Access: ROLE_ADMIN
+   */
+  async reindex(): Promise<{ message: string; totalIndexed: number }> {
+    const res = await httpClient.post<{ message: string; totalIndexed: number }>(
+      "/api/v1/admin/translations/reindex",
+    );
+    return res.data;
+  },
 };

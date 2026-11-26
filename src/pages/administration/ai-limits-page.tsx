@@ -15,6 +15,8 @@ import {
   Info,
   Users,
   Globe,
+  Database,
+  CheckCircle2,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
@@ -26,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { platformConfigApi } from "@/api";
+import { platformConfigApi, translationsApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError } from "@/api/client";
 import type { AiModelRosterConfig, SearchRateLimitConfig } from "@/types/api";
@@ -212,6 +214,18 @@ export function AiLimitsPage() {
     void refetchAi();
     void refetchLimits();
   }
+
+  const reindexMutation = useMutation({
+    mutationFn: () => translationsApi.reindex(),
+    onSuccess: (data) => {
+      toast.success(data.message || "Search index rebuilt", {
+        description: `Successfully indexed ${data.totalIndexed.toLocaleString()} translation entries into memory.`,
+      });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Failed to rebuild search index");
+    },
+  });
 
   const isRefreshing = isAiFetching || isLimitsFetching;
   const anyError = aiError || limitsError;
@@ -703,6 +717,71 @@ export function AiLimitsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* SECTION 3: IN-MEMORY SEARCH INDEX & MONGODB SYNC */}
+      <Card className="overflow-hidden border-border">
+        <CardHeader className="border-b border-border bg-muted/20 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Database className="size-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Search Engine In-Memory Index
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  RAM binary-search and sentence token cache for lightning-fast vocabulary searches
+                </CardDescription>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => reindexMutation.mutate()}
+              disabled={reindexMutation.isPending}
+              className="gap-1.5 shadow-sm"
+            >
+              <Database className={`size-3.5 ${reindexMutation.isPending ? "animate-spin text-primary" : ""}`} />
+              {reindexMutation.isPending ? "Rebuilding Index…" : "Rebuild Search Index"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <span>Auto-Sync on Approval</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                Approving single submissions or bulk submissions automatically syncs the RAM index instantly.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <span>Live Database Fallback</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                Searches query MongoDB in real time so newly inserted words appear with zero delay.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <span>Manual Admin Reindex</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                Trigger an on-demand rebuild anytime bulk imports or raw MongoDB database modifications occur.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

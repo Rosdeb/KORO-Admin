@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Database } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
@@ -165,6 +165,19 @@ export function TranslationsPage() {
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to delete translation"),
   });
 
+  const reindexMutation = useMutation({
+    mutationFn: () => translationsApi.reindex(),
+    onSuccess: (data) => {
+      toast.success(data.message || "Search index rebuilt", {
+        description: `Successfully indexed ${data.totalIndexed.toLocaleString()} translation entries into memory.`,
+      });
+      void translationsQuery.refetch();
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Failed to rebuild search index");
+    },
+  });
+
   function openCreate() {
     setEditing(null);
     form.reset({ conceptId: "", languageId: "", text: "", pronunciation: "", notes: "" });
@@ -202,6 +215,19 @@ export function TranslationsPage() {
               }}
               isRefreshing={translationsQuery.isFetching || conceptsQuery.isFetching || languagesQuery.isFetching}
             />
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => reindexMutation.mutate()}
+                disabled={reindexMutation.isPending}
+                className="gap-1.5"
+                title="Rebuild in-memory search index from live database"
+              >
+                <Database className={`size-3.5 ${reindexMutation.isPending ? "animate-spin text-primary" : ""}`} />
+                {reindexMutation.isPending ? "Rebuilding index…" : "Rebuild Index"}
+              </Button>
+            )}
             {canManage && (
               <Button size="sm" onClick={openCreate}>
                 <Plus className="size-4" /> Add translation
