@@ -379,16 +379,25 @@ export interface SubmissionApproveAllResponse {
 /** Document in `ai_db_search` MongoDB collection from Sub-5ms AI Query Cache. */
 export interface AiCacheEntry {
   id: string;
-  query: string;
-  translation: string;
+  rawQuery?: string;
+  normalizedQuery?: string;
+  query?: string;
+  targetText?: string;
+  translation?: string;
+  sourceLanguageId?: string | null;
+  targetLanguageId?: string | null;
+  targetLanguageName?: string | null;
   pronunciation?: string | null;
   notes?: string | null;
-  hitCount?: number;
+  exampleSentence?: string | null;
+  groundingVocab?: string[];
+  modelUsed?: string | null;
   model?: string | null;
-  sourceLanguage?: string | null;
-  targetLanguage?: string | null;
+  hitCount?: number;
+  lastHitAt?: string | null;
+  verified?: boolean;
   promoted?: boolean;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string | null;
 }
 

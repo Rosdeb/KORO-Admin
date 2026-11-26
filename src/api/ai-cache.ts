@@ -1,14 +1,30 @@
 import { httpClient } from "./client";
 import type { AiCacheEntry } from "@/types/api";
 
+export interface AiCachePageResponse {
+  content: AiCacheEntry[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export const aiCacheApi = {
   /**
    * List all cached AI queries, translations, and search hit counts.
    * Access: ROLE_ADMIN
    */
-  async list(): Promise<AiCacheEntry[]> {
-    const res = await httpClient.get<AiCacheEntry[]>("/api/v1/admin/ai-cache");
-    return res.data;
+  async list(page = 0, size = 100): Promise<AiCacheEntry[]> {
+    const res = await httpClient.get<AiCachePageResponse | AiCacheEntry[]>("/api/v1/admin/ai-cache", {
+      params: { page, size },
+    });
+    if (Array.isArray(res.data)) {
+      return res.data;
+    }
+    if (res.data && Array.isArray((res.data as AiCachePageResponse).content)) {
+      return (res.data as AiCachePageResponse).content;
+    }
+    return [];
   },
 
   /**

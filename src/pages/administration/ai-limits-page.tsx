@@ -147,14 +147,23 @@ export function AiLimitsPage() {
   });
 
   const {
-    data: cacheEntries = [],
+    data: cacheData,
     isLoading: isCacheLoading,
     isFetching: isCacheFetching,
     refetch: refetchCache,
   } = useQuery({
     queryKey: queryKeys.aiCache,
-    queryFn: aiCacheApi.list,
+    queryFn: () => aiCacheApi.list(),
   });
+
+  // Safe entries list from array or Spring PageResponse
+  const entriesList: AiCacheEntry[] = useMemo(() => {
+    if (Array.isArray(cacheData)) return cacheData;
+    if (cacheData && Array.isArray((cacheData as { content?: AiCacheEntry[] }).content)) {
+      return (cacheData as { content: AiCacheEntry[] }).content;
+    }
+    return [];
+  }, [cacheData]);
 
   // ─── LOCAL STATE FOR CONFIG ──────────────────────────────────────────────
   const [editedModels, setEditedModels] = useState<string[] | null>(null);
@@ -310,24 +319,30 @@ export function AiLimitsPage() {
 
   // ─── FILTERED CACHE DATA & METRICS ───────────────────────────────────────
   const filteredCacheEntries = useMemo(() => {
-    return cacheEntries.filter((entry) => {
-      if (statusFilter === "PROMOTED" && !entry.promoted) return false;
-      if (statusFilter === "CACHED" && entry.promoted) return false;
+    return entriesList.filter((entry) => {
+      const isPromoted = Boolean(entry.verified || entry.promoted);
+      if (statusFilter === "PROMOTED" && !isPromoted) return false;
+      if (statusFilter === "CACHED" && isPromoted) return false;
       if (!searchFilter.trim()) return true;
       const q = searchFilter.toLowerCase();
+      const queryStr = entry.rawQuery || entry.query || entry.normalizedQuery || "";
+      const textStr = entry.targetText || entry.translation || "";
+      const pronStr = entry.pronunciation || "";
+      const noteStr = entry.notes || "";
+      const modelStr = entry.modelUsed || entry.model || "";
       return (
-        entry.query?.toLowerCase().includes(q) ||
-        entry.translation?.toLowerCase().includes(q) ||
-        entry.pronunciation?.toLowerCase().includes(q) ||
-        entry.notes?.toLowerCase().includes(q) ||
-        entry.model?.toLowerCase().includes(q)
+        queryStr.toLowerCase().includes(q) ||
+        textStr.toLowerCase().includes(q) ||
+        pronStr.toLowerCase().includes(q) ||
+        noteStr.toLowerCase().includes(q) ||
+        modelStr.toLowerCase().includes(q)
       );
     });
-  }, [cacheEntries, searchFilter, statusFilter]);
+  }, [entriesList, searchFilter, statusFilter]);
 
-  const totalCachedCount = cacheEntries.length;
-  const totalSearchHits = cacheEntries.reduce((acc, curr) => acc + (curr.hitCount || 1), 0);
-  const totalPromotedCount = cacheEntries.filter((e) => e.promoted).length;
+  const totalCachedCount = entriesList.length;
+  const totalSearchHits = entriesList.reduce((acc, curr) => acc + (curr.hitCount || 1), 0);
+  const totalPromotedCount = entriesList.filter((e) => Boolean(e.verified || e.promoted)).length;
 
   const isRefreshing = isAiFetching || isLimitsFetching || isCacheFetching;
   const anyError = aiError || limitsError;
@@ -1047,18 +1062,23 @@ export function AiLimitsPage() {
                   <TableBody>
                     {filteredCacheEntries.map((entry) => {
                       const isPromoting = promotingId === entry.id;
+                      const isPromoted = Boolean(entry.verified || entry.promoted);
+                      const queryText = entry.rawQuery || entry.query || entry.normalizedQuery || "—";
+                      const translationText = entry.targetText || entry.translation || "—";
+                      const modelName = entry.modelUsed || entry.model || "gemini-1.5-flash";
+                      const targetLang = entry.targetLanguageName || entry.targetLanguageId || "Koch";
                       return (
                         <TableRow key={entry.id} className="hover:bg-muted/30 transition-colors">
                           {/* Query text */}
                           <TableCell className="align-top py-3 font-medium">
                             <div className="space-y-1">
                               <span className="text-xs sm:text-sm text-foreground select-text font-medium">
-                                {entry.query}
+                                {queryText}
                               </span>
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                <span>{entry.sourceLanguage || "English"}</span>
+                                <span>{entry.sourceLanguageId || "English"}</span>
                                 <span>→</span>
-                                <span>{entry.targetLanguage || "Koch"}</span>
+                                <span>{targetLang}</span>
                                 {entry.createdAt && (
                                   <>
                                     <span className="text-muted-foreground/40">·</span>
@@ -1073,7 +1093,7 @@ export function AiLimitsPage() {
                           <TableCell className="align-top py-3">
                             <div className="space-y-1">
                               <div className="text-xs sm:text-sm font-semibold text-foreground select-text">
-                                {entry.translation}
+                                {translationText}
                               </div>
                               {entry.pronunciation && (
                                 <div className="text-[11px] font-mono text-muted-foreground">
@@ -1102,14 +1122,14 @@ export function AiLimitsPage() {
                           {/* AI Model */}
                           <TableCell className="align-top py-3">
                             <Badge variant="secondary" className="font-mono text-[10px] truncate max-w-[120px]">
-                              {entry.model || "gemini-1.5-flash"}
+                              {modelName}
                             </Badge>
                           </TableCell>
 
                           {/* Actions */}
                           <TableCell className="align-top py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              {entry.promoted ? (
+                              {isPromoted ? (
                                 <Badge
                                   variant="success"
                                   className="text-[10px] h-7 px-2 gap-1 font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
@@ -1160,7 +1180,7 @@ export function AiLimitsPage() {
           if (!open) setEntryToPurge(null);
         }}
         title="Purge Cached AI Translation"
-        description={`Are you sure you want to delete the cached translation for "${entryToPurge?.query}"? The system will query the Gemini API if someone searches this sentence again.`}
+        description={`Are you sure you want to delete the cached translation for "${entryToPurge?.rawQuery || entryToPurge?.query || "this entry"}"? The system will query the Gemini API if someone searches this sentence again.`}
         confirmLabel="Purge Entry"
         variant="destructive"
         onConfirm={async () => {
