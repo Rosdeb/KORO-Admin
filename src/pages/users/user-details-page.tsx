@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Info, Mail, Calendar, Clock, Globe, Gauge } from "lucide-react";
+import { ArrowLeft, Info, Mail, Calendar, Clock, Globe, Gauge, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,7 +20,7 @@ import { adminUsersApi, activityApi, platformConfigApi } from "@/api";
 import { ApiError } from "@/api/client";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuth } from "@/hooks/use-auth";
-import { initials } from "@/lib/utils";
+import { initials, cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Role, UserResponse } from "@/types/api";
 
@@ -254,14 +254,33 @@ export function UserDetailsPage() {
               Live inspection of daily and monthly translation search usage and quotas.
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRateLimitDialogOpen(true)}
-            className="gap-1.5 text-xs"
-          >
-            <Gauge className="size-3.5" /> Adjust Limits &amp; Resets
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-foreground"
+              aria-label="Refresh rate limits"
+              title="Refresh rate limits"
+              disabled={rateLimitQuery.isFetching}
+              onClick={async () => {
+                await rateLimitQuery.refetch();
+                toast.success("Rate limits rechecked", {
+                  description: "Fetched fresh quota counters from the server.",
+                });
+              }}
+            >
+              <RefreshCw className={cn("size-3.5", rateLimitQuery.isFetching && "animate-spin motion-reduce:animate-none")} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRateLimitDialogOpen(true)}
+              className="gap-1.5 text-xs"
+            >
+              <Gauge className="size-3.5" /> Adjust Limits &amp; Resets
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {rateLimitQuery.isLoading ? (

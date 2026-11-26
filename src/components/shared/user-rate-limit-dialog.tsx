@@ -10,6 +10,7 @@ import {
   Calendar,
   Layers,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   Dialog,
@@ -27,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { platformConfigApi } from "@/api/platform-config";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError } from "@/api/client";
+import { cn } from "@/lib/utils";
 import type { UserRateLimitUpdateRequest } from "@/types/api";
 
 interface UserRateLimitDialogProps {
@@ -45,6 +47,7 @@ export function UserRateLimitDialog({
   const {
     data: rateLimit,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useQuery({
@@ -153,11 +156,30 @@ export function UserRateLimitDialog({
                 </DialogDescription>
               </div>
             </div>
-            {rateLimit && (
-              <Badge variant={hasCustomLimits ? "default" : "secondary"} className="text-[10px]">
-                {hasCustomLimits ? "Custom Override" : "System Defaults"}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {rateLimit && (
+                <Badge variant={hasCustomLimits ? "default" : "secondary"} className="text-[10px]">
+                  {hasCustomLimits ? "Custom Override" : "System Defaults"}
+                </Badge>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-7 text-muted-foreground hover:text-foreground"
+                aria-label="Refresh rate limits"
+                title="Refresh rate limits"
+                disabled={isFetching}
+                onClick={async () => {
+                  await refetch();
+                  toast.success("Rate limits rechecked", {
+                    description: "Fetched fresh quota counters from the server.",
+                  });
+                }}
+              >
+                <RefreshCw className={cn("size-3.5", isFetching && "animate-spin motion-reduce:animate-none")} />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
