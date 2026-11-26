@@ -62,7 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Moderation",
     items: [
       { label: "Submission Queue", to: "/submissions", icon: ClipboardCheck, roles: ALL_STAFF },
-      { label: "AI Query Cache", to: "/administration/ai-limits?tab=cache", icon: Sparkles, roles: ADMIN_MODERATOR },
+      { label: "AI Query Cache", to: "/administration/ai-limits?tab=cache", icon: Sparkles, roles: ADMIN },
       { label: "Contact Messages", to: "/contact-messages", icon: Mail, roles: ADMIN_MODERATOR },
       { label: "My Activity", to: "/activity", icon: Activity, roles: ALL_STAFF },
     ],

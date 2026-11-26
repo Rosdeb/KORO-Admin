@@ -234,7 +234,7 @@ export function OverviewPage() {
               />
             ) : (
               <div className="divide-y divide-border -mx-6 px-6">
-                {pendingQuery.data!.content.map((s) => (
+                {(pendingQuery.data?.content ?? []).map((s) => (
                   <div key={s.id} className="flex items-center justify-between gap-4 py-3 text-sm">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground font-medium text-xs uppercase">

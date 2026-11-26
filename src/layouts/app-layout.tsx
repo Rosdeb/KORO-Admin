@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { useAdminPreferences } from "@/lib/admin-preferences";
 import { PageLoading } from "@/components/shared/page-loading";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { Outlet } from "react-router-dom";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -23,7 +24,11 @@ export function AppLayout() {
         <Topbar />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 sm:px-6 lg:px-8">
           <div className="mx-auto min-w-0 max-w-[1440px]">
-            <Suspense fallback={<PageLoading />}><Outlet /></Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoading />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
