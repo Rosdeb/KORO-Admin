@@ -75,13 +75,6 @@ export function OverviewPage() {
 
   return (
     <div className="admin-workspace-enter space-y-7">
-      <div className="flex items-center justify-end">
-        <Button variant="outline" size="sm" onClick={refetchAll} className="gap-1.5">
-          <RefreshCw className="size-3.5" />
-          Refresh
-        </Button>
-      </div>
-
       {/* Stat grid — primary 4 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
