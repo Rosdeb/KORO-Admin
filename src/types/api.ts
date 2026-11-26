@@ -376,6 +376,22 @@ export interface SubmissionApproveAllResponse {
   failed?: string[];
 }
 
+/** Document in `ai_db_search` MongoDB collection from Sub-5ms AI Query Cache. */
+export interface AiCacheEntry {
+  id: string;
+  query: string;
+  translation: string;
+  pronunciation?: string | null;
+  notes?: string | null;
+  hitCount?: number;
+  model?: string | null;
+  sourceLanguage?: string | null;
+  targetLanguage?: string | null;
+  promoted?: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
 /**
  * Body for `POST /api/v1/submissions` (end-user "submit a word" flow — see
  * "Endpoints intentionally not surfaced" in docs/API_MAPPING.md; kept here for type

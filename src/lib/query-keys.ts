@@ -24,4 +24,5 @@ export const queryKeys = {
   searchRateLimits: ["admin", "rate-limits", "search"] as const,
   userRateLimits: (userId: string) => ["admin", "rate-limits", "users", userId] as const,
   aiModels: ["admin", "ai", "models"] as const,
+  aiCache: ["admin", "ai-cache"] as const,
 };

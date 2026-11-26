@@ -11,3 +11,4 @@ export * from "./activity";
 export * from "./leaderboard";
 export * from "./contact-messages";
 export * from "./platform-config";
+export * from "./ai-cache";
