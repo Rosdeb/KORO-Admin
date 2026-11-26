@@ -52,6 +52,8 @@ export function UserRateLimitDialog({
     queryKey: queryKeys.userRateLimits(user?.id ?? ""),
     queryFn: () => platformConfigApi.getUserRateLimits(user!.id),
     enabled: !!user && open,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [editedDailyInput, setEditedDailyInput] = useState<string | null>(null);
@@ -81,11 +83,45 @@ export function UserRateLimitDialog({
     onOpenChange(nextOpen);
   };
 
+  const handleRefresh = async () => {
+    if (!user) return;
+    setEditedDailyInput(null);
+    setEditedMonthlyInput(null);
+    setResetDaily(false);
+    setResetMonthly(false);
+
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.userRateLimits(user.id),
+      refetchType: "all",
+    });
+
+    const res = await refetch();
+    if (res.data) {
+      toast.success("Rate limits rechecked", {
+        description: `Live quotas for ${user.name} refreshed from server.`,
+      });
+    }
+  };
+
   const updateMutation = useMutation({
     mutationFn: (payload: UserRateLimitUpdateRequest) =>
       platformConfigApi.updateUserRateLimits(user!.id, payload),
-    onSuccess: (updated) => {
+    onSuccess: async (updated) => {
+      // 1. Immediately update cache with the server's updated DTO
       queryClient.setQueryData(queryKeys.userRateLimits(user!.id), updated);
+
+      // 2. Clear draft states
+      setEditedDailyInput(null);
+      setEditedMonthlyInput(null);
+      setResetDaily(false);
+      setResetMonthly(false);
+
+      // 3. Force refetch all active listeners across the app
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userRateLimits(user!.id),
+        refetchType: "all",
+      });
+
       toast.success("Rate limits updated", {
         description: `Quotas and settings refreshed for ${user?.name}.`,
       });
@@ -173,7 +209,7 @@ export function UserRateLimitDialog({
               variant="ghost"
               size="icon"
               className="size-8 text-muted-foreground hover:text-foreground shrink-0 rounded-md"
-              onClick={() => refetch()}
+              onClick={handleRefresh}
               disabled={isLoading || isFetching}
               title="Refresh quota status"
             >

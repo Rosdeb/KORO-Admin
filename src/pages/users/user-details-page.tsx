@@ -59,6 +59,8 @@ export function UserDetailsPage() {
     queryKey: queryKeys.userRateLimits(id!),
     queryFn: () => platformConfigApi.getUserRateLimits(id!),
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [rateLimitDialogOpen, setRateLimitDialogOpen] = useState(false);
@@ -264,6 +266,10 @@ export function UserDetailsPage() {
               title="Refresh rate limits"
               disabled={rateLimitQuery.isFetching}
               onClick={async () => {
+                await queryClient.invalidateQueries({
+                  queryKey: queryKeys.userRateLimits(id!),
+                  refetchType: "all",
+                });
                 await rateLimitQuery.refetch();
                 toast.success("Rate limits rechecked", {
                   description: "Fetched fresh quota counters from the server.",
