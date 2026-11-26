@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Palette, Table2, ShieldCheck, RefreshCw, Download, RotateCcw, LogOut, Copy, Check, Sun, Moon, Monitor, SlidersHorizontal, ExternalLink } from "lucide-react";
+import { Palette, Table2, ShieldCheck, RefreshCw, Download, RotateCcw, LogOut, Copy, Check, Sun, Moon, Monitor, SlidersHorizontal, ExternalLink, Paintbrush, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { CustomThemeDialog } from "@/components/shared/custom-theme-dialog";
 import { ROLE_LABEL } from "@/components/shared/status-badge";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorTheme } from "@/hooks/use-color-theme";
@@ -35,12 +36,13 @@ const selectStyle = "h-8 max-w-full rounded-md border border-input bg-card px-2.
 
 export function SettingsPage() {
   const { preference, setTheme } = useTheme();
-  const { themeId, setColorTheme, themes, currentTheme } = useColorTheme();
+  const { themeId, setColorTheme, deleteCustomTheme, themes, currentTheme } = useColorTheme();
   const preferences = useAdminPreferences();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const [dialog, setDialog] = useState<"reset" | "logout" | null>(null);
 
   async function refreshData() {
@@ -91,48 +93,83 @@ export function SettingsPage() {
             </div><p className="mt-2 text-xs text-muted-foreground">System follows your device’s appearance.</p></fieldset>
 
             <div className="border-t border-border pt-4">
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                 <legend className="text-xs font-medium">Sidebar & Accent Palettes ({themes.length} Combos)</legend>
-                <span className="text-[11px] text-muted-foreground font-mono">
-                  Active: {currentTheme.name}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline">
+                    Active: {currentTheme.name}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => setCustomDialogOpen(true)}
+                    className="h-7 text-xs gap-1.5 cursor-pointer"
+                  >
+                    <Paintbrush className="size-3 text-primary" />
+                    <span>Create Custom</span>
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Choose a coordinated color combination for the sidebar and active navigation badges, featuring your custom Sage, Celadon, Pine, Azure, and Gold palettes.
+                Choose a coordinated color combination, or create your own custom palette saved directly in your browser cookies.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
                 {themes.map((t) => {
                   const isActive = themeId === t.id;
                   return (
-                    <button
+                    <div
                       key={t.id}
-                      type="button"
                       onClick={() => setColorTheme(t.id)}
-                      className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-left text-xs transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`group relative flex items-start justify-between gap-2.5 rounded-lg border p-2.5 text-left text-xs transition-all outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring ${
                         isActive
                           ? "border-primary bg-primary/5 shadow-xs"
                           : "border-border bg-card hover:bg-muted/30"
                       }`}
                     >
-                      <div className="flex items-center -space-x-1.5 pt-0.5 shrink-0">
-                        {t.previewColors.map((color, idx) => (
-                          <span
-                            key={idx}
-                            className="size-4 rounded-full ring-2 ring-background shadow-xs"
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="font-semibold truncate text-foreground">{t.name}</span>
-                          {isActive && <Check className="size-3.5 text-primary shrink-0" />}
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <div className="flex items-center -space-x-1.5 pt-0.5 shrink-0">
+                          {t.previewColors.map((color, idx) => (
+                            <span
+                              key={idx}
+                              className="size-4 rounded-full ring-2 ring-background shadow-xs"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
                         </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                          {t.description}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold truncate text-foreground">{t.name}</span>
+                            {t.isCustom && (
+                              <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.2 rounded font-mono font-medium shrink-0">
+                                Cookie
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                            {t.description}
+                          </p>
+                        </div>
                       </div>
-                    </button>
+
+                      <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                        {isActive && <Check className="size-3.5 text-primary shrink-0" />}
+                        {t.isCustom && (
+                          <button
+                            type="button"
+                            title="Delete custom palette"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteCustomTheme(t.id);
+                              toast.success(`Removed "${t.name}" from cookies`);
+                            }}
+                            className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -173,5 +210,6 @@ export function SettingsPage() {
     </div>
     <p className="text-xs leading-5 text-muted-foreground">Preferences are saved in this browser and apply to your admin workspace.</p>
     <ConfirmDialog open={dialog !== null} onOpenChange={(open) => { if (!open) setDialog(null); }} title={dialog === "logout" ? "Sign out of this session?" : "Restore default preferences?"} description={dialog === "logout" ? "You’ll need to sign in again to access the admin panel." : "Your theme and workspace preferences will return to their defaults. Your account and platform data stay unchanged."} confirmLabel={dialog === "logout" ? "Sign out" : "Restore defaults"} onConfirm={confirmAction} />
+    <CustomThemeDialog open={customDialogOpen} onOpenChange={setCustomDialogOpen} />
   </div>;
 }

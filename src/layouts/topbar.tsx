@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Bell, Palette, Check } from "lucide-react";
+import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Bell, Palette, Check, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -17,6 +17,7 @@ import { SidebarContent } from "./sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorTheme } from "@/hooks/use-color-theme";
+import { CustomThemeDialog } from "@/components/shared/custom-theme-dialog";
 import { cn, initials } from "@/lib/utils";
 
 export function Topbar() {
@@ -25,6 +26,7 @@ export function Topbar() {
   const { themeId, setColorTheme, themes, currentTheme } = useColorTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
@@ -113,8 +115,21 @@ export function Topbar() {
                 );
               })}
             </div>
+            <DropdownMenuSeparator />
+            <div className="p-1">
+              <button
+                type="button"
+                onClick={() => setCustomDialogOpen(true)}
+                className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <Paintbrush className="size-3.5 text-primary" />
+                <span>Create Custom Palette…</span>
+              </button>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <CustomThemeDialog open={customDialogOpen} onOpenChange={setCustomDialogOpen} />
 
         {/* Theme toggle */}
         <Button

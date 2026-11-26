@@ -1,8 +1,10 @@
+import { getCookie, setCookie, deleteCookie } from "./cookie-utils";
+
 export interface ColorTheme {
   id: string;
   name: string;
   description: string;
-  category: "Warm Gold" | "Earthy & Pastel" | "Nature & Ocean" | "Jewel & Ruby" | "Dark & Minimal";
+  category: "Warm Gold" | "Earthy & Pastel" | "Nature & Ocean" | "Jewel & Ruby" | "Dark & Minimal" | "Custom";
   sidebarBg: string;
   sidebarFg: string;
   sidebarMuted: string;
@@ -11,6 +13,7 @@ export interface ColorTheme {
   sidebarBorder: string;
   sidebarAccent: string;
   previewColors: [string, string, string]; // [sidebarBg, activeBg, accent]
+  isCustom?: boolean;
 }
 
 export const COLOR_THEMES: ColorTheme[] = [
@@ -265,8 +268,153 @@ export const COLOR_THEMES: ColorTheme[] = [
 
 export const DEFAULT_THEME_ID = "sage-linen";
 
+export const CUSTOM_THEMES_COOKIE = "koro_custom_color_themes";
+export const ACTIVE_THEME_COOKIE = "koro_color_theme_id";
+
+// --- Color Helpers ---
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    return {
+      r: parseInt(clean[0] + clean[0], 16),
+      g: parseInt(clean[1] + clean[1], 16),
+      b: parseInt(clean[2] + clean[2], 16),
+    };
+  }
+  if (clean.length === 6) {
+    return {
+      r: parseInt(clean.substring(0, 2), 16),
+      g: parseInt(clean.substring(2, 4), 16),
+      b: parseInt(clean.substring(4, 6), 16),
+    };
+  }
+  return null;
+}
+
+export function getLuminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0.5;
+  const a = [rgb.r, rgb.g, rgb.b].map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+export function getContrastColor(hex: string): string {
+  return getLuminance(hex) > 0.45 ? "#111827" : "#FFFFFF";
+}
+
+export function createCustomTheme(options: {
+  id?: string;
+  name: string;
+  sidebarBg: string;
+  sidebarActiveBg: string;
+  sidebarFg?: string;
+}): ColorTheme {
+  const sidebarBg = options.sidebarBg.startsWith("#") ? options.sidebarBg : `#${options.sidebarBg}`;
+  const sidebarActiveBg = options.sidebarActiveBg.startsWith("#") ? options.sidebarActiveBg : `#${options.sidebarActiveBg}`;
+  
+  const bgLuminance = getLuminance(sidebarBg);
+  const isDarkBg = bgLuminance < 0.45;
+
+  const sidebarFg = options.sidebarFg
+    ? options.sidebarFg.startsWith("#") ? options.sidebarFg : `#${options.sidebarFg}`
+    : isDarkBg ? "#F9FAFB" : "#111827";
+
+  const sidebarActiveFg = getContrastColor(sidebarActiveBg);
+  const activeRgb = hexToRgb(sidebarActiveBg) ?? { r: 120, g: 120, b: 120 };
+
+  const sidebarBorder = `rgba(${activeRgb.r}, ${activeRgb.g}, ${activeRgb.b}, 0.28)`;
+  const sidebarAccent = `rgba(${activeRgb.r}, ${activeRgb.g}, ${activeRgb.b}, ${isDarkBg ? "0.18" : "0.12"})`;
+
+  const fgRgb = hexToRgb(sidebarFg) ?? (isDarkBg ? { r: 240, g: 240, b: 240 } : { r: 30, g: 30, b: 30 });
+  const sidebarMuted = isDarkBg
+    ? `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, 0.65)`
+    : `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, 0.65)`;
+
+  const id = options.id || `custom-${Date.now()}`;
+
+  return {
+    id,
+    name: options.name.trim() || "My Custom Theme",
+    description: `Custom cookie-stored palette (${sidebarBg}, ${sidebarActiveBg})`,
+    category: "Custom",
+    sidebarBg,
+    sidebarFg,
+    sidebarMuted,
+    sidebarActiveBg,
+    sidebarActiveFg,
+    sidebarBorder,
+    sidebarAccent,
+    previewColors: [sidebarBg, sidebarActiveBg, sidebarFg],
+    isCustom: true,
+  };
+}
+
+// --- Cookie Storage Functions ---
+
+export function getStoredCustomThemes(): ColorTheme[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const rawCookie = getCookie(CUSTOM_THEMES_COOKIE);
+    const rawLocal = localStorage.getItem(CUSTOM_THEMES_COOKIE);
+    const raw = rawCookie || rawLocal;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((t): t is ColorTheme => Boolean(t && t.id && t.sidebarBg));
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomTheme(theme: ColorTheme): void {
+  if (typeof window === "undefined") return;
+  const current = getStoredCustomThemes();
+  const filtered = current.filter((t) => t.id !== theme.id);
+  const updated = [theme, ...filtered];
+  const serialized = JSON.stringify(updated);
+  setCookie(CUSTOM_THEMES_COOKIE, serialized, 365);
+  try {
+    localStorage.setItem(CUSTOM_THEMES_COOKIE, serialized);
+  } catch {
+    // Ignore localStorage quota errors
+  }
+}
+
+export function deleteStoredCustomTheme(id: string): void {
+  if (typeof window === "undefined") return;
+  const current = getStoredCustomThemes();
+  const updated = current.filter((t) => t.id !== id);
+  const serialized = JSON.stringify(updated);
+  if (updated.length === 0) {
+    deleteCookie(CUSTOM_THEMES_COOKIE);
+    try {
+      localStorage.removeItem(CUSTOM_THEMES_COOKIE);
+    } catch {
+      // Ignore
+    }
+  } else {
+    setCookie(CUSTOM_THEMES_COOKIE, serialized, 365);
+    try {
+      localStorage.setItem(CUSTOM_THEMES_COOKIE, serialized);
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+export function getAllThemes(): ColorTheme[] {
+  const custom = getStoredCustomThemes();
+  return [...custom, ...COLOR_THEMES];
+}
+
 export function getThemeById(id: string): ColorTheme {
-  return COLOR_THEMES.find((t) => t.id === id) ?? COLOR_THEMES[0];
+  const all = getAllThemes();
+  return all.find((t) => t.id === id) ?? COLOR_THEMES[0];
 }
 
 export function applyColorTheme(theme: ColorTheme) {
