@@ -11,22 +11,13 @@ import {
   isToday,
   subDays,
 } from "date-fns";
-import {
-  Flame,
-  Calendar,
-  Sparkles,
-  Trophy,
-  Activity,
-  RotateCcw,
-} from "lucide-react";
+import { Flame, X } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -39,14 +30,11 @@ export interface ActivityItem {
 interface GitHubActivityCalendarProps {
   activities?: ActivityItem[];
   isLoading?: boolean;
-  weeksToShow?: number; // e.g. 26 for ~6 months, 52 for 1 year, 16 for compact
+  weeksToShow?: number; // e.g. 20 for compact, 26 for ~6 months, 52 for 1 year
   selectedDate?: string | null; // format YYYY-MM-DD
   onSelectDate?: (dateStr: string | null) => void;
   title?: string;
-  description?: string;
   className?: string;
-  compact?: boolean;
-  showStreaks?: boolean;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -54,14 +42,11 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export function GitHubActivityCalendar({
   activities = [],
   isLoading = false,
-  weeksToShow = 26,
+  weeksToShow = 24,
   selectedDate = null,
   onSelectDate,
-  title = "Contribution Activity",
-  description,
+  title = "Activity",
   className,
-  compact = false,
-  showStreaks = true,
 }: GitHubActivityCalendarProps) {
   // 1. Process activity counts per date string (yyyy-MM-dd)
   const { dateCountMap, dateTypeMap } = React.useMemo(() => {
@@ -69,7 +54,7 @@ export function GitHubActivityCalendar({
     const types = new Map<string, string[]>();
 
     for (const act of activities) {
-      if (!act.createdAt) continue;
+      if (!act?.createdAt) continue;
       try {
         const d = typeof act.createdAt === "string" ? parseISO(act.createdAt) : new Date(act.createdAt);
         const key = format(d, "yyyy-MM-dd");
@@ -155,21 +140,19 @@ export function GitHubActivityCalendar({
     return { weeks: weeksArr, monthHeaders: months };
   }, [weeksToShow, dateCountMap, dateTypeMap]);
 
-  // 3. Compute streaks and summary metrics
-  const { totalContributions, currentStreak, longestStreak, activeDays } = React.useMemo(() => {
+  // 3. Compute simple streak & total contributions
+  const { totalContributions, currentStreak } = React.useMemo(() => {
     let total = 0;
-    let active = 0;
 
     weeks.forEach((w) => {
       w.forEach((day) => {
         if (!day.isFuture) {
           total += day.count;
-          if (day.count > 0) active++;
         }
       });
     });
 
-    // Compute current streak: count backward from today (or yesterday if today is 0)
+    // Current streak
     const today = new Date();
     let curr = 0;
     const todayStr = format(today, "yyyy-MM-dd");
@@ -187,114 +170,64 @@ export function GitHubActivityCalendar({
       }
     }
 
-    // Longest streak in visible period
-    let longest = 0;
-    let tempStreak = 0;
-    const allDaysSorted = weeks.flatMap((w) => w).filter((d) => !d.isFuture);
-    allDaysSorted.forEach((d) => {
-      if (d.count > 0) {
-        tempStreak++;
-        if (tempStreak > longest) longest = tempStreak;
-      } else {
-        tempStreak = 0;
-      }
-    });
-
-    return {
-      totalContributions: total,
-      currentStreak: curr,
-      longestStreak: longest,
-      activeDays: active,
-    };
+    return { totalContributions: total, currentStreak: curr };
   }, [weeks, dateCountMap]);
 
-  // Activity level styling (GitHub inspired greens)
+  // Minimal clean GitHub green shades
   const getCellColor = (count: number, isFuture: boolean) => {
     if (isFuture) return "bg-transparent opacity-0 pointer-events-none";
     if (count === 0)
-      return "bg-muted/60 dark:bg-muted/40 border border-border/30 hover:border-foreground/30";
+      return "bg-muted/50 dark:bg-muted/30 border border-border/20 hover:border-foreground/30";
     if (count <= 2)
-      return "bg-emerald-200 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-900";
+      return "bg-emerald-200 dark:bg-emerald-950/90 border border-emerald-300 dark:border-emerald-800/80";
     if (count <= 5)
-      return "bg-emerald-400 dark:bg-emerald-700 border border-emerald-500 dark:border-emerald-600 text-white";
+      return "bg-emerald-400 dark:bg-emerald-700 border border-emerald-500 dark:border-emerald-600";
     if (count <= 9)
-      return "bg-emerald-500 dark:bg-emerald-500 border border-emerald-600 dark:border-emerald-400 text-white";
-    return "bg-emerald-600 dark:bg-emerald-400 border border-emerald-700 dark:border-emerald-300 text-white";
+      return "bg-emerald-500 dark:bg-emerald-500 border border-emerald-600 dark:border-emerald-400";
+    return "bg-emerald-600 dark:bg-emerald-400 border border-emerald-700 dark:border-emerald-300";
   };
 
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-4",
+        "rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-sm space-y-3",
         className,
       )}
     >
-      {/* Header with Title and Streak Badges */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Activity className="size-4" />
-            </div>
-            <h3 className="text-base font-semibold tracking-tight text-foreground">
-              {title}
-            </h3>
-            <Badge variant="secondary" className="text-xs font-mono font-medium">
-              {totalContributions.toLocaleString()} total
-            </Badge>
-          </div>
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
+      {/* Sleek, minimal header: Title + count + subtle streak */}
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground tracking-tight">{title}</span>
+          <span className="text-muted-foreground text-[11px]">
+            &bull; {totalContributions.toLocaleString()} actions
+          </span>
         </div>
 
-        {/* Streaks Summary Pills */}
-        {showStreaks && !isLoading && (
-          <div className="flex items-center gap-2 text-xs">
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-2.5 py-1">
-              <Flame className="size-3.5 text-amber-500" />
-              <span className="text-muted-foreground">Streak:</span>
-              <span className="font-semibold text-foreground font-mono">
-                {currentStreak} {currentStreak === 1 ? "day" : "days"}
-              </span>
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-2.5 py-1">
-              <Trophy className="size-3.5 text-yellow-500" />
-              <span className="text-muted-foreground">Best:</span>
-              <span className="font-semibold text-foreground font-mono">
-                {longestStreak} {longestStreak === 1 ? "day" : "days"}
-              </span>
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-2.5 py-1">
-              <Sparkles className="size-3.5 text-primary" />
-              <span className="text-muted-foreground">Active:</span>
-              <span className="font-semibold text-foreground font-mono">
-                {activeDays} {activeDays === 1 ? "day" : "days"}
-              </span>
-            </div>
+        {currentStreak > 0 && !isLoading && (
+          <div className="flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            <Flame className="size-3.5 fill-amber-500 text-amber-500" />
+            <span>{currentStreak}d streak</span>
           </div>
         )}
       </div>
 
-      {/* Main Heatmap Grid */}
+      {/* Heatmap Grid */}
       {isLoading ? (
-        <div className="space-y-2 py-4">
-          <Skeleton className="h-28 w-full rounded-lg" />
+        <div className="py-2">
+          <Skeleton className="h-24 w-full rounded-lg" />
         </div>
       ) : (
-        <TooltipProvider delayDuration={100}>
+        <TooltipProvider delayDuration={50}>
           <div className="overflow-x-auto pb-1">
             <div className="inline-block min-w-full">
-              {/* Month Labels Row */}
-              <div className="flex text-[10px] text-muted-foreground font-medium mb-1 pl-7">
+              {/* Month Labels */}
+              <div className="flex text-[9px] text-muted-foreground font-medium mb-1 pl-6">
                 {weeks.map((_, i) => {
                   const monthHeader = monthHeaders.find((m) => m.weekIndex === i);
                   return (
                     <div
                       key={i}
-                      className="w-3 sm:w-3.5 mr-1 shrink-0 text-left truncate"
+                      className="w-2.5 sm:w-3 mr-1 shrink-0 text-left truncate"
                     >
                       {monthHeader ? monthHeader.label : ""}
                     </div>
@@ -304,13 +237,13 @@ export function GitHubActivityCalendar({
 
               {/* Grid: Day labels + Week columns */}
               <div className="flex items-start">
-                {/* Day of Week Labels (Mon, Wed, Fri) */}
-                <div className="flex flex-col gap-1 pr-2 text-[9px] text-muted-foreground font-medium select-none">
+                {/* Mon, Wed, Fri labels */}
+                <div className="flex flex-col gap-1 pr-1.5 text-[8.5px] text-muted-foreground font-medium select-none">
                   {DAY_LABELS.map((dayLabel, idx) => (
                     <div
                       key={dayLabel}
                       className={cn(
-                        "h-3 sm:h-3.5 flex items-center justify-end leading-none",
+                        "h-2.5 sm:h-3 flex items-center justify-end leading-none",
                         idx % 2 === 1 ? "opacity-100" : "opacity-0",
                       )}
                     >
@@ -332,7 +265,7 @@ export function GitHubActivityCalendar({
                           return (
                             <div
                               key={day.dateStr}
-                              className="size-3 sm:size-3.5 rounded-[3px] bg-transparent"
+                              className="size-2.5 sm:size-3 rounded-[2px] bg-transparent"
                             />
                           );
                         }
@@ -349,39 +282,22 @@ export function GitHubActivityCalendar({
                                 }}
                                 aria-label={`${day.count} activities on ${day.dateStr}`}
                                 className={cn(
-                                  "size-3 sm:size-3.5 rounded-[3px] transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                  "size-2.5 sm:size-3 rounded-[2px] transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                                   cellColor,
-                                  isCurrentDay && "ring-1 ring-primary/70",
-                                  isSelected && "ring-2 ring-primary ring-offset-1 z-10 scale-110",
+                                  isCurrentDay && "ring-1 ring-primary/80",
+                                  isSelected && "ring-2 ring-primary ring-offset-1 z-10 scale-125",
                                 )}
                               />
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs p-2 space-y-1 shadow-lg">
+                            <TooltipContent side="top" className="text-xs p-2 space-y-0.5 shadow-lg border">
                               <p className="font-semibold text-foreground">
                                 {day.count === 0
                                   ? "No activity"
                                   : `${day.count} ${day.count === 1 ? "activity" : "activities"}`}
                               </p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {format(day.date, "EEEE, MMMM d, yyyy")}
+                              <p className="text-[10px] text-muted-foreground">
+                                {format(day.date, "EEEE, MMM d, yyyy")}
                               </p>
-                              {day.types.length > 0 && (
-                                <div className="flex flex-wrap gap-1 pt-1 border-t border-border/50 max-w-[200px]">
-                                  {day.types.slice(0, 3).map((t) => (
-                                    <span
-                                      key={t}
-                                      className="text-[9px] px-1 py-0.2 rounded bg-muted text-foreground font-mono"
-                                    >
-                                      {t}
-                                    </span>
-                                  ))}
-                                  {day.types.length > 3 && (
-                                    <span className="text-[9px] text-muted-foreground">
-                                      +{day.types.length - 3} more
-                                    </span>
-                                  )}
-                                </div>
-                              )}
                             </TooltipContent>
                           </Tooltip>
                         );
@@ -395,38 +311,31 @@ export function GitHubActivityCalendar({
         </TooltipProvider>
       )}
 
-      {/* Footer: Filter Reset & GitHub-style Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-border/50 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
+      {/* Minimal Footer */}
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+        <div>
           {selectedDate ? (
-            <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded-md font-medium text-xs">
-              <Calendar className="size-3" />
-              <span>Filtered to: {format(parseISO(selectedDate), "MMM d, yyyy")}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onSelectDate?.(null)}
-                className="h-4 w-4 p-0 ml-1 hover:bg-transparent text-primary hover:text-foreground"
-              >
-                <RotateCcw className="size-3" />
-                <span className="sr-only">Clear date filter</span>
-              </Button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onSelectDate?.(null)}
+              className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+            >
+              <span>{format(parseISO(selectedDate), "MMM d")}: clear filter</span>
+              <X className="size-3" />
+            </button>
           ) : (
-            <span className="text-[11px]">
-              {compact ? "Recent activity overview" : "Click any square to filter the log table below"}
-            </span>
+            <span className="text-[10px]">Click a day to filter table</span>
           )}
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-1.5 text-[11px]">
+        <div className="flex items-center gap-1 text-[10px]">
           <span>Less</span>
-          <div className="size-2.5 sm:size-3 rounded-[2px] bg-muted/60 dark:bg-muted/40 border border-border/30" />
-          <div className="size-2.5 sm:size-3 rounded-[2px] bg-emerald-200 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800" />
-          <div className="size-2.5 sm:size-3 rounded-[2px] bg-emerald-400 dark:bg-emerald-700 border border-emerald-500 dark:border-emerald-600" />
-          <div className="size-2.5 sm:size-3 rounded-[2px] bg-emerald-500 dark:bg-emerald-500 border border-emerald-600 dark:border-emerald-400" />
-          <div className="size-2.5 sm:size-3 rounded-[2px] bg-emerald-600 dark:bg-emerald-400 border border-emerald-700 dark:border-emerald-300" />
+          <div className="size-2 rounded-[2px] bg-muted/50 dark:bg-muted/30 border border-border/20" />
+          <div className="size-2 rounded-[2px] bg-emerald-200 dark:bg-emerald-950/90 border border-emerald-300 dark:border-emerald-800/80" />
+          <div className="size-2 rounded-[2px] bg-emerald-400 dark:bg-emerald-700" />
+          <div className="size-2 rounded-[2px] bg-emerald-500 dark:bg-emerald-500" />
+          <div className="size-2 rounded-[2px] bg-emerald-600 dark:bg-emerald-400" />
           <span>More</span>
         </div>
       </div>

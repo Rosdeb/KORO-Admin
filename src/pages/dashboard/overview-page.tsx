@@ -204,7 +204,6 @@ export function OverviewPage() {
         isLoading={activityQuery.isLoading}
         weeksToShow={26}
         title="My Activity"
-        description="Your contribution activity across KORO Admin. Click any day to view detailed actions."
         onSelectDate={(dateStr) => {
           if (dateStr) {
             navigate(`/activity?date=${dateStr}`);
@@ -212,7 +211,6 @@ export function OverviewPage() {
             navigate("/activity");
           }
         }}
-        compact
       />
 
       {/* Main content grid */}
