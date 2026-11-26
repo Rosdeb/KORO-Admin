@@ -53,7 +53,7 @@ export function StatCard({
         </div>
       ) : (
         <>
-          <p className="mt-3 text-[1.75rem] font-bold leading-none tracking-tighter text-foreground">
+          <p className="mt-3 text-[1.75rem] font-bold leading-none tracking-tight text-foreground">
             {typeof value === "number" ? formatNumber(value) : (value ?? "—")}
           </p>
           {deltaPercent !== undefined && deltaPercent !== null ? (
