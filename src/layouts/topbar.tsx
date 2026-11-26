@@ -75,7 +75,7 @@ export function Topbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 max-h-[75vh] overflow-y-auto">
             <DropdownMenuLabel className="pb-1.5">
-              <div className="text-xs font-semibold text-foreground">Color Scheme (12 Combos)</div>
+              <div className="text-xs font-semibold text-foreground">Color Scheme ({themes.length} Combos)</div>
               <p className="text-[11px] font-normal text-muted-foreground mt-0.5">
                 Customize sidebar & accent palette
               </p>

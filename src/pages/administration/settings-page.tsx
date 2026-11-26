@@ -92,13 +92,13 @@ export function SettingsPage() {
 
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-between mb-1.5">
-                <legend className="text-xs font-medium">Sidebar & Accent Palettes (12 Colors)</legend>
+                <legend className="text-xs font-medium">Sidebar & Accent Palettes ({themes.length} Combos)</legend>
                 <span className="text-[11px] text-muted-foreground font-mono">
                   Active: {currentTheme.name}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Choose a coordinated color combination for the sidebar and active indicators, including Golden Sand (<code className="text-foreground font-mono font-semibold">#E5CD82</code>) and Cream (<code className="text-foreground font-mono font-semibold">#FFF2B4</code>).
+                Choose a coordinated color combination for the sidebar and active navigation badges, featuring your custom Sage, Celadon, Pine, Azure, and Gold palettes.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
                 {themes.map((t) => {

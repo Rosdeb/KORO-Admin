@@ -2,7 +2,7 @@ export interface ColorTheme {
   id: string;
   name: string;
   description: string;
-  category: "Warm Gold" | "Nature & Ocean" | "Jewel & Ruby" | "Dark & Minimal";
+  category: "Warm Gold" | "Earthy & Pastel" | "Nature & Ocean" | "Jewel & Ruby" | "Dark & Minimal";
   sidebarBg: string;
   sidebarFg: string;
   sidebarMuted: string;
@@ -14,7 +14,79 @@ export interface ColorTheme {
 }
 
 export const COLOR_THEMES: ColorTheme[] = [
-  // ─── USER REQUESTED COMBINATIONS (#E5CD82 & #FFF2B4) ────────────────────────
+  // ─── USER REQUESTED COMBINATIONS: EARTHY & PASTEL ─────────────────────────
+  {
+    id: "sage-linen",
+    name: "Sage, Celadon & Linen",
+    description: "Botanical sage (#94A684), soft celadon (#AEC3AE), and warm linen (#E4E4D0).",
+    category: "Earthy & Pastel",
+    sidebarBg: "#202A1E",
+    sidebarFg: "#F2F5ED",
+    sidebarMuted: "#AEC3AE",
+    sidebarActiveBg: "#94A684",
+    sidebarActiveFg: "#162014",
+    sidebarBorder: "rgba(148, 166, 132, 0.28)",
+    sidebarAccent: "rgba(174, 195, 174, 0.2)",
+    previewColors: ["#94A684", "#AEC3AE", "#E4E4D0"],
+  },
+  {
+    id: "linen-sage-light",
+    name: "Linen & Sage (Light)",
+    description: "Light warm linen (#E4E4D0) sidebar with herbal sage (#94A684) badges.",
+    category: "Earthy & Pastel",
+    sidebarBg: "#E4E4D0",
+    sidebarFg: "#212B1E",
+    sidebarMuted: "#607459",
+    sidebarActiveBg: "#94A684",
+    sidebarActiveFg: "#FFFFFF",
+    sidebarBorder: "rgba(148, 166, 132, 0.4)",
+    sidebarAccent: "rgba(174, 195, 174, 0.35)",
+    previewColors: ["#E4E4D0", "#94A684", "#AEC3AE"],
+  },
+  {
+    id: "pine-taupe-cream",
+    name: "Pine Jade, Taupe & Cream",
+    description: "Forest jade (#5D866C), warm taupe sand (#C2A68C), and almond cream (#E6D8C3).",
+    category: "Earthy & Pastel",
+    sidebarBg: "#19281F",
+    sidebarFg: "#FBF7F0",
+    sidebarMuted: "#C2A68C",
+    sidebarActiveBg: "#5D866C",
+    sidebarActiveFg: "#FFFFFF",
+    sidebarBorder: "rgba(194, 166, 140, 0.26)",
+    sidebarAccent: "rgba(230, 216, 195, 0.18)",
+    previewColors: ["#5D866C", "#C2A68C", "#E6D8C3"],
+  },
+  {
+    id: "azure-sky-mist",
+    name: "Azure & Sky Mist",
+    description: "Nordic maritime blue (#619DC6) with soft sky cloud (#A6C8E2) accents.",
+    category: "Nature & Ocean",
+    sidebarBg: "#0F202F",
+    sidebarFg: "#F0F8FF",
+    sidebarMuted: "#A6C8E2",
+    sidebarActiveBg: "#619DC6",
+    sidebarActiveFg: "#FFFFFF",
+    sidebarBorder: "rgba(97, 157, 198, 0.28)",
+    sidebarAccent: "rgba(166, 200, 226, 0.2)",
+    previewColors: ["#0F202F", "#619DC6", "#A6C8E2"],
+  },
+  {
+    id: "meadow-leaf-sage",
+    name: "Meadow & Leaf Sage",
+    description: "Calm meadow celadon (#B8CFB3) and earthy leaf sage (#84A282).",
+    category: "Earthy & Pastel",
+    sidebarBg: "#172619",
+    sidebarFg: "#F3FAF1",
+    sidebarMuted: "#B8CFB3",
+    sidebarActiveBg: "#84A282",
+    sidebarActiveFg: "#0F1A10",
+    sidebarBorder: "rgba(132, 162, 130, 0.28)",
+    sidebarAccent: "rgba(184, 207, 179, 0.2)",
+    previewColors: ["#172619", "#84A282", "#B8CFB3"],
+  },
+
+  // ─── USER REQUESTED COMBINATIONS: WARM GOLD (#E5CD82 & #FFF2B4) ────────────
   {
     id: "golden-sand",
     name: "Golden Sand & Cream",
@@ -191,7 +263,7 @@ export const COLOR_THEMES: ColorTheme[] = [
   },
 ];
 
-export const DEFAULT_THEME_ID = "golden-sand"; // Set to user's requested palette as default or active option
+export const DEFAULT_THEME_ID = "sage-linen";
 
 export function getThemeById(id: string): ColorTheme {
   return COLOR_THEMES.find((t) => t.id === id) ?? COLOR_THEMES[0];
