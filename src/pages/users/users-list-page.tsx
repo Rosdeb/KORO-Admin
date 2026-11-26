@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Download, Eye, MoreHorizontal, ShieldCheck, UserX, UserCheck2 } from "lucide-react";
+import { Download, Eye, MoreHorizontal, ShieldCheck, UserX, UserCheck2, Gauge, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
@@ -10,6 +11,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { UserRateLimitDialog } from "@/components/shared/user-rate-limit-dialog";
 import { UserStatusBadge, RoleBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,6 +44,7 @@ export function UsersListPage() {
   const [statusFilter, setStatusFilter] = useState<UserStatus | "ALL">("ALL");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [pendingStatusChange, setPendingStatusChange] = useState<{ user: UserResponse; status: UserStatus } | null>(null);
+  const [rateLimitTargetUser, setRateLimitTargetUser] = useState<UserResponse | null>(null);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: UserStatus; name: string }) =>
@@ -226,8 +229,20 @@ export function UsersListPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
+                  <TableCell>
+                    {user.lastLoginAt ? (
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium text-foreground">
+                          {format(new Date(user.lastLoginAt), "MMM d, yyyy")}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="size-3 text-muted-foreground/70" />
+                          {format(new Date(user.lastLoginAt), "h:mm a")}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Never</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -241,6 +256,9 @@ export function UsersListPage() {
                           <Link to={`/users/${user.id}`}>
                             <Eye /> View details
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setRateLimitTargetUser(user)}>
+                          <Gauge /> Rate limits
                         </DropdownMenuItem>
                         {user.status !== "ACTIVE" && (
                           <DropdownMenuItem onClick={() => setPendingStatusChange({ user, status: "ACTIVE" })}>
@@ -290,6 +308,12 @@ export function UsersListPage() {
           }}
         />
       )}
+
+      <UserRateLimitDialog
+        user={rateLimitTargetUser}
+        open={!!rateLimitTargetUser}
+        onOpenChange={(open) => !open && setRateLimitTargetUser(null)}
+      />
     </div>
   );
 }

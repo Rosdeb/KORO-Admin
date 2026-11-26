@@ -45,6 +45,7 @@ single "analytics" endpoint exists, so the frontend aggregates client-side
 | Activate / Suspend / Deactivate | `adminUsersApi.updateStatus` | `PUT /api/v1/admin/users/{id}/status?status=` | Admin only. `status` is a query param, enum `ACTIVE \| INACTIVE \| SUSPENDED`. |
 | Grant / revoke roles | `adminUsersApi.updateRoles` | `PUT /api/v1/admin/users/{id}/roles` | Admin only. Body is a raw JSON array of role names, e.g. `["ADMIN","USER"]`. **Not present in the live `/v3/api-docs` output** — see [BACKEND_GAPS.md](./BACKEND_GAPS.md) for why it's still wired up. |
 | User Details | Reuses `adminUsersApi.list` (filtered client-side by id — there is no `GET /admin/users/{id}`) | — | Admin only. |
+| User Search Rate Limits & Quotas | `platformConfigApi.getUserRateLimits` / `updateUserRateLimits` | `GET/PUT /api/v1/admin/rate-limits/users/{userId}` | Admin only. Inspect daily/monthly usage and remaining counts, set custom limits (0 to revert), or reset daily/monthly usage counts to 0. |
 | Activity Timeline (User Details) | `api/activity.ts` → `activityApi.list` | `GET /api/v1/activity` | Only rendered when viewing **your own** account — the endpoint is scoped to the signed-in user for every role. See gap below. |
 
 ## Content Management

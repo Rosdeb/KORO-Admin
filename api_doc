@@ -82,6 +82,7 @@ All protected endpoints require a `Bearer <JWT_TOKEN>` in the `Authorization` he
 | `/api/v1/admin/contact-messages/statistics` | GET | | | | ✅ | ✅ |
 | `/api/v1/admin/contact-messages/{id}` | DELETE | | | | | ✅ |
 | `/api/v1/admin/rate-limits/search` | GET / PUT | | | | | ✅ |
+| `/api/v1/admin/rate-limits/users/{userId}` | GET / PUT | | | | | ✅ |
 | `/api/v1/admin/ai/models` | GET / PUT | | | | | ✅ |
 
 > **Not yet built:** the table you gave includes a "Review Reports" capability for Moderator/Admin. There is no content-flagging/report feature anywhere in this codebase today (no `Report` entity, no submit-a-report endpoint for users) — "Moderation History" above is served from the existing submission audit trail (`reviewedBy`/`reviewedAt` on `TranslationSubmission`), which is a different thing. Say the word if you want a real report/flag system built; it would need a new entity + a user-facing "report this entry" endpoint before there's anything for a moderator to review.
@@ -571,6 +572,42 @@ A submission is a full dictionary entry — a word in its **source language**, p
       "enabled": true
     }
     ```
+
+### Inspect Specific User Rate Limit & Quotas
+*   **URL**: `GET /api/v1/admin/rate-limits/users/{userId}`
+*   **Access**: `ROLE_ADMIN` only
+*   **Response (200 OK)**:
+    ```json
+    {
+      "userId": "674175394f47ec729221a415",
+      "userName": "John Doe",
+      "userEmail": "john@example.com",
+      "dailyCount": 14,
+      "dailyLimit": 50,
+      "dailyRemaining": 36,
+      "monthlyCount": 120,
+      "monthlyLimit": 500,
+      "monthlyRemaining": 380,
+      "customDailyLimit": null,
+      "customMonthlyLimit": null,
+      "lastSearchAt": "2026-11-26T04:12:00Z"
+    }
+    ```
+
+### Update User Search Rate Limit & Quotas
+*   **URL**: `PUT /api/v1/admin/rate-limits/users/{userId}`
+*   **Access**: `ROLE_ADMIN` only
+*   **Request Body**:
+    ```json
+    {
+      "customDailyLimit": 200,
+      "customMonthlyLimit": 2000,
+      "resetDailyCount": false,
+      "resetMonthlyCount": false
+    }
+    ```
+    *Passing `0` for custom limits clears the override and restores system defaults. Passing `true` for reset fields zeroes out the corresponding count immediately.*
+*   **Response (200 OK)**: Returns the updated `UserRateLimitDto`.
 
 ---
 

@@ -280,6 +280,28 @@ export interface AiModelRosterConfig {
   enabled: boolean;
 }
 
+export interface UserRateLimitDto {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  dailyCount: number;
+  dailyLimit: number;
+  dailyRemaining: number;
+  monthlyCount: number;
+  monthlyLimit: number;
+  monthlyRemaining: number;
+  customDailyLimit: number | null;
+  customMonthlyLimit: number | null;
+  lastSearchAt: string | null;
+}
+
+export interface UserRateLimitUpdateRequest {
+  customDailyLimit?: number | null;
+  customMonthlyLimit?: number | null;
+  resetDailyCount?: boolean;
+  resetMonthlyCount?: boolean;
+}
+
 // ---- Request payloads ----
 
 export interface LoginRequest {

@@ -22,5 +22,6 @@ export const queryKeys = {
   contactMessageDetail: (id: string) => ["contact-messages", "detail", id] as const,
   contactMessageStats: ["contact-messages", "statistics"] as const,
   searchRateLimits: ["admin", "rate-limits", "search"] as const,
+  userRateLimits: (userId: string) => ["admin", "rate-limits", "users", userId] as const,
   aiModels: ["admin", "ai", "models"] as const,
 };

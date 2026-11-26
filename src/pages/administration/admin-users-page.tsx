@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Eye } from "lucide-react";
+import { Eye, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -84,8 +85,20 @@ export function AdminUsersPage() {
                 <TableCell>
                   <UserStatusBadge status={user.status} />
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
+                <TableCell>
+                  {user.lastLoginAt ? (
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-foreground">
+                        {format(new Date(user.lastLoginAt), "MMM d, yyyy")}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="size-3 text-muted-foreground/70" />
+                        {format(new Date(user.lastLoginAt), "h:mm a")}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Never</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" asChild>

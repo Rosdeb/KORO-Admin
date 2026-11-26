@@ -1,5 +1,10 @@
 import { httpClient } from "./client";
-import type { AiModelRosterConfig, SearchRateLimitConfig } from "@/types/api";
+import type {
+  AiModelRosterConfig,
+  SearchRateLimitConfig,
+  UserRateLimitDto,
+  UserRateLimitUpdateRequest,
+} from "@/types/api";
 
 export const platformConfigApi = {
   /**
@@ -35,6 +40,30 @@ export const platformConfigApi = {
    */
   async updateAiModels(payload: AiModelRosterConfig): Promise<AiModelRosterConfig> {
     const res = await httpClient.put<AiModelRosterConfig>("/api/v1/admin/ai/models", payload);
+    return res.data;
+  },
+
+  /**
+   * Inspect a specific user's search rate limits and usage quotas.
+   * Access: ROLE_ADMIN
+   */
+  async getUserRateLimits(userId: string): Promise<UserRateLimitDto> {
+    const res = await httpClient.get<UserRateLimitDto>(`/api/v1/admin/rate-limits/users/${userId}`);
+    return res.data;
+  },
+
+  /**
+   * Update a specific user's custom limits or reset usage counts.
+   * Access: ROLE_ADMIN
+   */
+  async updateUserRateLimits(
+    userId: string,
+    payload: UserRateLimitUpdateRequest,
+  ): Promise<UserRateLimitDto> {
+    const res = await httpClient.put<UserRateLimitDto>(
+      `/api/v1/admin/rate-limits/users/${userId}`,
+      payload,
+    );
     return res.data;
   },
 };
