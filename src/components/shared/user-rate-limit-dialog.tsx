@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import {
   Gauge,
   RotateCcw,
   Clock,
-  Save,
-  Calendar,
-  Layers,
-  AlertCircle,
   RefreshCw,
+  Sparkles,
+  ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { platformConfigApi } from "@/api/platform-config";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError } from "@/api/client";
@@ -73,19 +71,25 @@ export function UserRateLimitDialog({
       ? String(rateLimit.customMonthlyLimit)
       : "");
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setEditedDailyInput(null);
+      setEditedMonthlyInput(null);
+      setResetDaily(false);
+      setResetMonthly(false);
+    }
+    onOpenChange(nextOpen);
+  };
+
   const updateMutation = useMutation({
     mutationFn: (payload: UserRateLimitUpdateRequest) =>
       platformConfigApi.updateUserRateLimits(user!.id, payload),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.userRateLimits(user!.id), updated);
-      toast.success("Rate limits updated for " + user?.name, {
-        description: "Limits and quota counters have been refreshed.",
+      toast.success("Rate limits updated", {
+        description: `Quotas and settings refreshed for ${user?.name}.`,
       });
-      setResetDaily(false);
-      setResetMonthly(false);
-      setEditedDailyInput(null);
-      setEditedMonthlyInput(null);
-      onOpenChange(false);
+      handleOpenChange(false);
     },
     onError: (err) => {
       toast.error(err instanceof ApiError ? err.message : "Failed to update rate limits");
@@ -100,20 +104,18 @@ export function UserRateLimitDialog({
       resetMonthlyCount: resetMonthly,
     };
 
-    // If user provided custom daily input
     if (customDailyInput.trim() !== "") {
       const parsedDaily = parseInt(customDailyInput.trim(), 10);
       payload.customDailyLimit = isNaN(parsedDaily) ? null : parsedDaily;
     } else {
-      payload.customDailyLimit = 0; // 0 reverts to system default
+      payload.customDailyLimit = 0;
     }
 
-    // If user provided custom monthly input
     if (customMonthlyInput.trim() !== "") {
       const parsedMonthly = parseInt(customMonthlyInput.trim(), 10);
       payload.customMonthlyLimit = isNaN(parsedMonthly) ? null : parsedMonthly;
     } else {
-      payload.customMonthlyLimit = 0; // 0 reverts to system default
+      payload.customMonthlyLimit = 0;
     }
 
     updateMutation.mutate(payload);
@@ -124,8 +126,10 @@ export function UserRateLimitDialog({
     setEditedMonthlyInput("0");
   };
 
-  const hasCustomLimits =
+  const hasCustomDaily =
     rateLimit?.customDailyLimit !== null && rateLimit?.customDailyLimit !== undefined;
+  const hasCustomMonthly =
+    rateLimit?.customMonthlyLimit !== null && rateLimit?.customMonthlyLimit !== undefined;
 
   const dailyPercent = rateLimit
     ? Math.min(100, Math.round((rateLimit.dailyCount / Math.max(1, rateLimit.dailyLimit)) * 100))
@@ -138,266 +142,282 @@ export function UserRateLimitDialog({
       )
     : 0;
 
+  const hasDraftChanges =
+    editedDailyInput !== null ||
+    editedMonthlyInput !== null ||
+    resetDaily ||
+    resetMonthly;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <div className="flex items-center justify-between gap-3 pr-6">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[460px] p-0 gap-0 overflow-hidden border-border/80 shadow-xl">
+        {/* Header */}
+        <DialogHeader className="p-5 pb-4 border-b border-border/60 bg-muted/20">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <Gauge className="size-4" />
               </div>
-              <div>
-                <DialogTitle className="text-base sm:text-lg">
-                  User Search Quotas &amp; Rate Limits
+              <div className="min-w-0">
+                <DialogTitle className="text-base font-semibold tracking-tight truncate">
+                  Search Quotas & Limits
                 </DialogTitle>
-                <DialogDescription className="text-xs">
-                  {user?.name} · <span className="font-mono text-muted-foreground">{user?.email}</span>
+                <DialogDescription className="text-xs text-muted-foreground truncate">
+                  {user?.name} &bull; {user?.email}
                 </DialogDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {rateLimit && (
-                <Badge variant={hasCustomLimits ? "default" : "secondary"} className="text-[10px]">
-                  {hasCustomLimits ? "Custom Override" : "System Defaults"}
-                </Badge>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-7 text-muted-foreground hover:text-foreground"
-                aria-label="Refresh rate limits"
-                title="Refresh rate limits"
-                disabled={isFetching}
-                onClick={async () => {
-                  await refetch();
-                  toast.success("Rate limits rechecked", {
-                    description: "Fetched fresh quota counters from the server.",
-                  });
-                }}
-              >
-                <RefreshCw className={cn("size-3.5", isFetching && "animate-spin motion-reduce:animate-none")} />
-              </Button>
-            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-foreground shrink-0 rounded-md"
+              onClick={() => refetch()}
+              disabled={isLoading || isFetching}
+              title="Refresh quota status"
+            >
+              <RefreshCw
+                className={cn("size-3.5", isFetching && "animate-spin text-primary")}
+              />
+              <span className="sr-only">Refresh</span>
+            </Button>
           </div>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="space-y-4 py-4">
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <Skeleton className="h-28 w-full rounded-lg" />
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-xs text-destructive space-y-2">
-            <div className="flex items-center gap-2 font-medium">
-              <AlertCircle className="size-4" />
-              <span>Failed to load rate limits for this user</span>
+        {/* Content Body */}
+        <div className="p-5 space-y-5">
+          {isLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <RefreshCw className="size-5 animate-spin text-primary" />
+              <p className="text-xs font-medium">Checking search quotas…</p>
             </div>
-            <p className="text-muted-foreground">
-              {error instanceof ApiError ? error.message : "Please verify connection to the server."}
-            </p>
-            <Button size="sm" variant="outline" onClick={() => void refetch()} className="h-7 text-xs">
-              Retry
-            </Button>
-          </div>
-        ) : rateLimit ? (
-          <div className="space-y-5 py-2">
-            {/* Live Quota Meters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Daily Quota Card */}
-              <div className="rounded-lg border border-border bg-muted/20 p-3.5 space-y-2.5">
+          ) : error ? (
+            <div className="py-8 flex flex-col items-center justify-center text-center gap-2 text-destructive">
+              <AlertCircle className="size-6" />
+              <p className="text-xs font-medium">
+                {error instanceof ApiError ? error.message : "Failed to load rate limits."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2 text-xs"
+                onClick={() => refetch()}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : rateLimit ? (
+            <>
+              {/* Daily Quota Section */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
-                    <Calendar className="size-3.5 text-primary" /> Daily Searches
-                  </span>
-                  <span className="text-muted-foreground font-mono">
-                    {resetDaily ? (
-                      <span className="text-emerald-600 font-semibold">Will reset to 0</span>
-                    ) : (
-                      <>
-                        <strong className="text-foreground">{rateLimit.dailyCount}</strong> / {rateLimit.dailyLimit}
-                      </>
+                  <div className="flex items-center gap-1.5 font-medium text-foreground">
+                    <span>Daily Searches</span>
+                    {hasCustomDaily && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700/50">
+                        Custom
+                      </Badge>
                     )}
-                  </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {resetDaily ? 0 : rateLimit.dailyCount}
+                    </span>{" "}
+                    / {rateLimit.dailyLimit}{" "}
+                    <span className="text-[10px] text-muted-foreground/80">
+                      ({resetDaily ? rateLimit.dailyLimit : rateLimit.dailyRemaining} left)
+                    </span>
+                  </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all ${
-                      resetDaily
-                        ? "bg-muted-foreground/30"
-                        : dailyPercent >= 90
-                          ? "bg-destructive"
-                          : dailyPercent >= 75
-                            ? "bg-warning"
-                            : "bg-primary"
-                    }`}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      dailyPercent >= 90
+                        ? "bg-destructive"
+                        : dailyPercent >= 70
+                        ? "bg-amber-500"
+                        : "bg-primary"
+                    )}
                     style={{ width: `${resetDaily ? 0 : dailyPercent}%` }}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>
-                    {resetDaily ? rateLimit.dailyLimit : rateLimit.dailyRemaining} remaining today
+                <div className="flex items-center justify-between text-[11px] pt-0.5">
+                  <span className="text-muted-foreground text-[10px]">
+                    {resetDaily ? "Will reset count to 0" : `${dailyPercent}% consumed`}
                   </span>
-                  <Button
+                  <button
                     type="button"
-                    variant={resetDaily ? "default" : "ghost"}
-                    size="sm"
-                    className="h-6 text-[11px] px-2 gap-1"
-                    onClick={() => setResetDaily(!resetDaily)}
+                    onClick={() => setResetDaily((prev) => !prev)}
+                    className={cn(
+                      "inline-flex items-center gap-1 text-[11px] font-medium transition-colors",
+                      resetDaily
+                        ? "text-amber-600 dark:text-amber-400 hover:underline"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                   >
-                    <RotateCcw className="size-3" />
-                    {resetDaily ? "Undo Reset" : "Reset Usage"}
-                  </Button>
+                    <RotateCcw className="size-2.5" />
+                    {resetDaily ? "Cancel reset" : "Reset count"}
+                  </button>
                 </div>
               </div>
 
-              {/* Monthly Quota Card */}
-              <div className="rounded-lg border border-border bg-muted/20 p-3.5 space-y-2.5">
+              {/* Monthly Quota Section */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
-                    <Layers className="size-3.5 text-violet-500" /> Monthly Searches
-                  </span>
-                  <span className="text-muted-foreground font-mono">
-                    {resetMonthly ? (
-                      <span className="text-emerald-600 font-semibold">Will reset to 0</span>
-                    ) : (
-                      <>
-                        <strong className="text-foreground">{rateLimit.monthlyCount}</strong> / {rateLimit.monthlyLimit}
-                      </>
+                  <div className="flex items-center gap-1.5 font-medium text-foreground">
+                    <span>Monthly Searches</span>
+                    {hasCustomMonthly && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700/50">
+                        Custom
+                      </Badge>
                     )}
-                  </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {resetMonthly ? 0 : rateLimit.monthlyCount}
+                    </span>{" "}
+                    / {rateLimit.monthlyLimit}{" "}
+                    <span className="text-[10px] text-muted-foreground/80">
+                      ({resetMonthly ? rateLimit.monthlyLimit : rateLimit.monthlyRemaining} left)
+                    </span>
+                  </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all ${
-                      resetMonthly
-                        ? "bg-muted-foreground/30"
-                        : monthlyPercent >= 90
-                          ? "bg-destructive"
-                          : monthlyPercent >= 75
-                            ? "bg-warning"
-                            : "bg-violet-500"
-                    }`}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      monthlyPercent >= 90
+                        ? "bg-destructive"
+                        : monthlyPercent >= 70
+                        ? "bg-amber-500"
+                        : "bg-primary"
+                    )}
                     style={{ width: `${resetMonthly ? 0 : monthlyPercent}%` }}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>
-                    {resetMonthly ? rateLimit.monthlyLimit : rateLimit.monthlyRemaining} remaining this month
+                <div className="flex items-center justify-between text-[11px] pt-0.5">
+                  <span className="text-muted-foreground text-[10px]">
+                    {resetMonthly ? "Will reset count to 0" : `${monthlyPercent}% consumed`}
                   </span>
-                  <Button
+                  <button
                     type="button"
-                    variant={resetMonthly ? "default" : "ghost"}
-                    size="sm"
-                    className="h-6 text-[11px] px-2 gap-1"
-                    onClick={() => setResetMonthly(!resetMonthly)}
+                    onClick={() => setResetMonthly((prev) => !prev)}
+                    className={cn(
+                      "inline-flex items-center gap-1 text-[11px] font-medium transition-colors",
+                      resetMonthly
+                        ? "text-amber-600 dark:text-amber-400 hover:underline"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                   >
-                    <RotateCcw className="size-3" />
-                    {resetMonthly ? "Undo Reset" : "Reset Usage"}
-                  </Button>
+                    <RotateCcw className="size-2.5" />
+                    {resetMonthly ? "Cancel reset" : "Reset count"}
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Last Search At */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-              <span className="flex items-center gap-1.5">
-                <Clock className="size-3.5" /> Last Search:
-              </span>
-              <span>
-                {rateLimit.lastSearchAt
-                  ? `${formatDistanceToNow(new Date(rateLimit.lastSearchAt), { addSuffix: true })} (${new Date(rateLimit.lastSearchAt).toLocaleDateString()})`
-                  : "No searches recorded yet"}
-              </span>
-            </div>
-
-            {/* Custom Limits Configuration Form */}
-            <div className="rounded-lg border border-border p-4 space-y-3 bg-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-foreground">Custom Limits Override</h4>
-                  <p className="text-[11px] text-muted-foreground">
-                    Set specific search limits for this user or enter 0 to use system defaults.
-                  </p>
+              {/* Custom Overrides Divider & Inputs */}
+              <div className="pt-2 border-t border-border/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Sparkles className="size-3 text-primary" /> Custom Limit Overrides
+                  </span>
+                  {(hasCustomDaily || hasCustomMonthly || editedDailyInput !== null || editedMonthlyInput !== null) && (
+                    <button
+                      type="button"
+                      onClick={handleRevertDefaults}
+                      className="text-[10px] text-muted-foreground hover:text-destructive transition-colors font-medium"
+                    >
+                      Clear overrides (0)
+                    </button>
+                  )}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={handleRevertDefaults}
-                >
-                  Clear to Defaults
-                </Button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="custom-daily" className="text-[11px] text-muted-foreground font-medium block">
+                      Daily Max
+                    </Label>
+                    <Input
+                      id="custom-daily"
+                      type="number"
+                      min={0}
+                      placeholder={`Default (${rateLimit.dailyLimit})`}
+                      value={customDailyInput}
+                      onChange={(e) => setEditedDailyInput(e.target.value)}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="custom-monthly" className="text-[11px] text-muted-foreground font-medium block">
+                      Monthly Max
+                    </Label>
+                    <Input
+                      id="custom-monthly"
+                      type="number"
+                      min={0}
+                      placeholder={`Default (${rateLimit.monthlyLimit})`}
+                      value={customMonthlyInput}
+                      onChange={(e) => setEditedMonthlyInput(e.target.value)}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground/80 leading-normal">
+                  Enter 0 or leave blank to inherit default platform limits.
+                </p>
               </div>
+            </>
+          ) : null}
+        </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <Label htmlFor="custom-daily" className="text-xs">
-                    Custom Daily Limit
-                  </Label>
-                  <Input
-                    id="custom-daily"
-                    type="number"
-                    min="0"
-                    placeholder={`e.g. ${rateLimit.dailyLimit} (or 0 for default)`}
-                    value={customDailyInput}
-                    onChange={(e) => setEditedDailyInput(e.target.value)}
-                    className="h-9 text-xs font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Current effective: {rateLimit.dailyLimit}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="custom-monthly" className="text-xs">
-                    Custom Monthly Limit
-                  </Label>
-                  <Input
-                    id="custom-monthly"
-                    type="number"
-                    min="0"
-                    placeholder={`e.g. ${rateLimit.monthlyLimit} (or 0 for default)`}
-                    value={customMonthlyInput}
-                    onChange={(e) => setEditedMonthlyInput(e.target.value)}
-                    className="h-9 text-xs font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Current effective: {rateLimit.monthlyLimit}
-                  </p>
-                </div>
-              </div>
-            </div>
+        {/* Footer */}
+        <DialogFooter className="p-3.5 px-5 border-t border-border/60 bg-muted/10 flex flex-row items-center justify-between sm:justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+            <Clock className="size-3.5 shrink-0 text-muted-foreground/70" />
+            <span className="truncate">
+              {rateLimit?.lastSearchAt
+                ? `Last: ${format(new Date(rateLimit.lastSearchAt), "MMM d, yyyy · h:mm a")}`
+                : "No searches recorded"}
+            </span>
           </div>
-        ) : null}
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={updateMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={updateMutation.isPending || isLoading}
-            className="gap-1.5"
-          >
-            <Save className="size-4" />
-            {updateMutation.isPending ? "Updating…" : "Save Limits & Resets"}
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs px-3"
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 text-xs px-3 gap-1.5 shadow-sm"
+              onClick={handleSave}
+              disabled={isLoading || updateMutation.isPending || !hasDraftChanges}
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <RefreshCw className="size-3.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  Save Changes
+                  <ArrowRight className="size-3" />
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
