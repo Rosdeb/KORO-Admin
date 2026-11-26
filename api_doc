@@ -81,6 +81,8 @@ All protected endpoints require a `Bearer <JWT_TOKEN>` in the `Authorization` he
 | `/api/v1/admin/contact-messages/{id}/status` | PUT | | | | ✅ | ✅ |
 | `/api/v1/admin/contact-messages/statistics` | GET | | | | ✅ | ✅ |
 | `/api/v1/admin/contact-messages/{id}` | DELETE | | | | | ✅ |
+| `/api/v1/admin/rate-limits/search` | GET / PUT | | | | | ✅ |
+| `/api/v1/admin/ai/models` | GET / PUT | | | | | ✅ |
 
 > **Not yet built:** the table you gave includes a "Review Reports" capability for Moderator/Admin. There is no content-flagging/report feature anywhere in this codebase today (no `Report` entity, no submit-a-report endpoint for users) — "Moderation History" above is served from the existing submission audit trail (`reviewedBy`/`reviewedAt` on `TranslationSubmission`), which is a different thing. Say the word if you want a real report/flag system built; it would need a new entity + a user-facing "report this entry" endpoint before there's anything for a moderator to review.
 
@@ -533,6 +535,40 @@ A submission is a full dictionary entry — a word in its **source language**, p
     ```json
     {
       "message": "Contact message deleted successfully"
+    }
+    ```
+
+---
+
+## 11. AI Model Failover Roster & Rate Limits API (`/api/v1/admin`) — `ROLE_ADMIN` only
+
+### View & Update Search Rate Limits
+*   **URLs**:
+    *   `GET /api/v1/admin/rate-limits/search`
+    *   `PUT /api/v1/admin/rate-limits/search`
+*   **Access**: `ROLE_ADMIN` only
+*   **Request / Response Body**:
+    ```json
+    {
+      "enabled": true,
+      "userDailyLimit": 100,
+      "userMonthlyLimit": 1500,
+      "anonDailyLimit": 25,
+      "anonMonthlyLimit": 250
+    }
+    ```
+
+### View & Update AI Models Failover Roster
+*   **URLs**:
+    *   `GET /api/v1/admin/ai/models`
+    *   `PUT /api/v1/admin/ai/models`
+*   **Access**: `ROLE_ADMIN` only
+*   **Description**: When a search has no database match, it calls the first model (`gemini-1.5-flash`). If that model reaches its rate limit (HTTP 429) or fails, the backend automatically switches to the next model in the roster without returning an error to the user.
+*   **Request / Response Body**:
+    ```json
+    {
+      "models": ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash"],
+      "enabled": true
     }
     ```
 

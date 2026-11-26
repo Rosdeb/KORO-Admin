@@ -10,3 +10,4 @@ export * from "./statistics";
 export * from "./activity";
 export * from "./leaderboard";
 export * from "./contact-messages";
+export * from "./platform-config";

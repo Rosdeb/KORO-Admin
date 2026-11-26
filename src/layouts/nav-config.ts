@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   UserCog,
   Settings,
+  Bot,
 } from "lucide-react";
 import type { Role } from "@/types/api";
 
@@ -73,6 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Admin Users", to: "/administration/admin-users", icon: UserCog, roles: ADMIN },
       { label: "Roles & Permissions", to: "/administration/roles-permissions", icon: ShieldCheck, roles: ADMIN },
+      { label: "AI & Rate Limits", to: "/administration/ai-limits", icon: Bot, roles: ADMIN },
       { label: "Settings", to: "/administration/settings", icon: Settings, roles: ADMIN },
     ],
   },

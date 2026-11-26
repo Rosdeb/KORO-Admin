@@ -267,6 +267,19 @@ export interface ContactMessageStatusUpdateResponse {
   email: string;
 }
 
+export interface SearchRateLimitConfig {
+  enabled: boolean;
+  userDailyLimit: number;
+  userMonthlyLimit: number;
+  anonDailyLimit: number;
+  anonMonthlyLimit: number;
+}
+
+export interface AiModelRosterConfig {
+  models: string[];
+  enabled: boolean;
+}
+
 // ---- Request payloads ----
 
 export interface LoginRequest {

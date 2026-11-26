@@ -103,6 +103,7 @@ export function SettingsPage() {
         <Card>
           <SectionTitle icon={SlidersHorizontal} title="Data & preferences" description="Refresh your workspace or keep a copy of your preferences." />
           <CardContent className="divide-y divide-border">
+            <SettingRow title="AI & search limits" description="Manage multi-model failover roster and search rate limits."><Button variant="outline" size="sm" asChild><Link to="/administration/ai-limits">Configure <ExternalLink className="size-3.5 ml-1" /></Link></Button></SettingRow>
             <SettingRow title="Refresh admin data" description="Reload open views and refresh other pages when you visit them."><Button variant="outline" size="sm" onClick={refreshData} disabled={refreshing}><RefreshCw className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />{refreshing ? "Refreshing…" : "Refresh"}</Button></SettingRow>
             <SettingRow title="Export preferences" description="Download your browser preferences as a JSON file."><Button variant="outline" size="sm" onClick={exportPreferences}><Download />Export</Button></SettingRow>
             <SettingRow title="Restore defaults" description="Reset appearance and workspace preferences."><Button variant="ghost" size="sm" onClick={() => setDialog("reset")}><RotateCcw />Reset</Button></SettingRow>

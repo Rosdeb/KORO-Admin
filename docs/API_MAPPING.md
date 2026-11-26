@@ -113,7 +113,8 @@ for these tabular reports (as distinct from the PDF vocabulary export under
 |---|---|
 | Admin Users | `GET /api/v1/admin/users`, filtered client-side to accounts holding `ROLE_ADMIN` or `ROLE_LANGUAGE_REVIEWER`. |
 | Roles & Permissions | Static reference table sourced from `/doc`'s permission matrix — there is no roles/permissions endpoint to fetch this from live. |
-| Settings | Local browser preference (theme) only; no platform settings endpoint exists. |
+| AI & Rate Limits | `GET/PUT /api/v1/admin/ai/models` (AI multi-model failover roster) and `GET/PUT /api/v1/admin/rate-limits/search` (search request daily/monthly quotas for users and anonymous visitors). |
+| Settings | Local browser preference (theme) only; quick link to AI & limits configuration. |
 
 ## Endpoints intentionally not surfaced in the admin panel
 

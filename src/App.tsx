@@ -38,6 +38,9 @@ const AdminUsersPage = lazy(() =>
 const RolesPermissionsPage = lazy(() =>
   import("@/pages/administration/roles-permissions-page").then((m) => ({ default: m.RolesPermissionsPage })),
 );
+const AiLimitsPage = lazy(() =>
+  import("@/pages/administration/ai-limits-page").then((m) => ({ default: m.AiLimitsPage })),
+);
 const SettingsPage = lazy(() =>
   import("@/pages/administration/settings-page").then((m) => ({ default: m.SettingsPage })),
 );
@@ -89,6 +92,7 @@ export default function App() {
                       <Route path="reports" element={<ReportsPage />} />
                       <Route path="administration/admin-users" element={<AdminUsersPage />} />
                       <Route path="administration/roles-permissions" element={<RolesPermissionsPage />} />
+                      <Route path="administration/ai-limits" element={<AiLimitsPage />} />
                       <Route path="administration/settings" element={<SettingsPage />} />
                     </Route>
 
