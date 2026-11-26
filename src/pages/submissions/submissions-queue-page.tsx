@@ -2,7 +2,7 @@ import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, CheckCheck, X, Volume2, Quote, StickyNote, Eye } from "lucide-react";
+import { Check, CheckCheck, X, Volume2, Quote, StickyNote, Eye, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -93,15 +93,35 @@ export function SubmissionsQueuePage() {
 
   const approveAllMutation = useMutation<SubmissionApproveAllResponse>({
     mutationFn: submissionsApi.approveAll,
+    onMutate: () => {
+      toast.loading("Approving all pending submissions in the background…", {
+        id: "bg-approve-all-task",
+      });
+    },
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["submissions", "pending"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["submissions"] }),
+        queryClient.invalidateQueries({ queryKey: ["concepts"] }),
+        queryClient.invalidateQueries({ queryKey: ["translations"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.translationsCount }),
+      ]);
       if (result.failed?.length) {
-        toast.warning(result.message, { description: result.failed.join("\n") });
+        toast.warning(result.message || "Bulk approval partially completed", {
+          id: "bg-approve-all-task",
+          description: result.failed.slice(0, 3).join("\n") + (result.failed.length > 3 ? `\n...and ${result.failed.length - 3} more` : ""),
+        });
       } else {
-        toast.success(result.message);
+        toast.success(result.message || "All pending submissions approved successfully!", {
+          id: "bg-approve-all-task",
+          description: "Dictionary entries and RAM search index have been updated.",
+        });
       }
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to approve pending submissions"),
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Failed to approve pending submissions", {
+        id: "bg-approve-all-task",
+      });
+    },
   });
 
   function openReview(submission: TranslationSubmission, action: ReviewAction) {
@@ -134,18 +154,39 @@ export function SubmissionsQueuePage() {
             {hasRole("ROLE_ADMIN") && (
               <Button
                 variant="outline"
-                className="border-success/40 text-success hover:bg-success/10 hover:text-success"
+                className="border-success/40 text-success hover:bg-success/10 hover:text-success gap-1.5"
                 disabled={isLoading || !data?.totalElements || approveAllMutation.isPending}
                 onClick={() => setApproveAllOpen(true)}
               >
-                <CheckCheck className="size-4" />
-                Approve all
+                {approveAllMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin text-success" />
+                    Approving in background…
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="size-4" />
+                    Approve all
+                  </>
+                )}
               </Button>
             )}
             <RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />
           </>
         }
       />
+
+      {approveAllMutation.isPending && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-success/30 bg-success/[0.06] p-3 text-xs text-foreground animate-in fade-in duration-200">
+          <Loader2 className="size-4 animate-spin text-success shrink-0" />
+          <div className="min-w-0">
+            <span className="font-semibold text-success">Background approval worker active:</span>{" "}
+            <span className="text-muted-foreground">
+              Publishing pending submissions into the dictionary and rebuilding the search index. You can continue working safely.
+            </span>
+          </div>
+        </div>
+      )}
 
       <SearchInput
         value={search}
@@ -412,10 +453,11 @@ export function SubmissionsQueuePage() {
         open={approveAllOpen}
         onOpenChange={setApproveAllOpen}
         title="Approve all pending submissions?"
-        description={`This will attempt to publish all ${data?.totalElements ?? 0} pending submissions immediately. Submissions that cannot be approved will remain in the queue.`}
+        description={`This will attempt to publish all ${data?.totalElements ?? 0} pending submissions in the background. Submissions that cannot be approved will remain in the queue.`}
         confirmLabel="Approve all"
-        onConfirm={async () => {
-          await approveAllMutation.mutateAsync();
+        onConfirm={() => {
+          setApproveAllOpen(false);
+          approveAllMutation.mutate();
         }}
       />
     </div>
