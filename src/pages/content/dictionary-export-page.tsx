@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Download,
   FileSpreadsheet,
   Loader2,
@@ -36,6 +38,7 @@ import { formatNumber } from "@/lib/utils";
 import type { Language } from "@/types/api";
 
 export function DictionaryExportPage() {
+  const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("ALL");
   const [selectedLanguageIds, setSelectedLanguageIds] = useState<string[]>([]);
@@ -150,11 +153,54 @@ export function DictionaryExportPage() {
     }
   }
 
+  function handleBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/content/translations");
+    }
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Back navigation & breadcrumbs */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="size-4" />
+          <span>Back</span>
+        </Button>
+        <span className="text-muted-foreground/40 text-xs">/</span>
+        <Link
+          to="/dashboard"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Dashboard
+        </Link>
+        <span className="text-muted-foreground/40 text-xs">/</span>
+        <span className="text-xs text-muted-foreground">Content</span>
+        <span className="text-muted-foreground/40 text-xs">/</span>
+        <span className="text-xs font-medium text-foreground">Dictionary Export</span>
+      </div>
+
       <PageHeader
         title="Dictionary Export"
         description="Download customized dictionary records filtered by category and languages in standardized CSV format with UTF-8 BOM"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBack}
+            className="hidden sm:inline-flex gap-1.5 text-xs h-9"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back</span>
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
