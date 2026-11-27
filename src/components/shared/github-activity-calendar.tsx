@@ -58,15 +58,15 @@ interface MonthLabel {
   col: number;
 }
 
-// GitHub calendar geometry matching authentic GitHub layout
-const CELL_SIZE = 10;
-const CELL_GAP = 3;
-const DISTANCE = CELL_SIZE + CELL_GAP; // 13px
-const MARGIN_LEFT = 32;
-const MARGIN_TOP = 20;
+// GitHub calendar geometry with larger, clearer cells aligned across page width
+const CELL_SIZE = 11.5;
+const CELL_GAP = 3.5;
+const DISTANCE = CELL_SIZE + CELL_GAP; // 15px
+const MARGIN_LEFT = 30;
+const MARGIN_TOP = 22;
 const TOTAL_WEEKS = 53;
-const SVG_WIDTH = MARGIN_LEFT + TOTAL_WEEKS * DISTANCE + 6; // 727px
-const SVG_HEIGHT = MARGIN_TOP + 7 * DISTANCE + 6; // 117px
+const SVG_WIDTH = Math.ceil(MARGIN_LEFT + (TOTAL_WEEKS - 1) * DISTANCE + CELL_SIZE + 4); // 826px
+const SVG_HEIGHT = Math.ceil(MARGIN_TOP + 6 * DISTANCE + CELL_SIZE + 4); // 132px
 
 // Authentic GitHub Contribution Colors
 // Light: #ebedf0, #9be9a8, #40c463, #30a14e, #216e39
@@ -261,9 +261,9 @@ export function GitHubActivityCalendar({
   };
 
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* 4 Cards Positioned Above the Chart (Retain borders and styling) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className={cn("space-y-4 w-full", className)}>
+      {/* 4 Cards Positioned Above the Chart (Retain borders and styling, aligned with page) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 w-full">
         {[
           {
             label: "Total Contributions",
@@ -292,35 +292,35 @@ export function GitHubActivityCalendar({
         ].map((card) => (
           <div
             key={card.label}
-            className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-border/80"
+            className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-border/80"
           >
-            <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", card.iconClass)}>
+            <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", card.iconClass)}>
               <card.icon className="size-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-base font-bold tabular-nums text-foreground">{card.value}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{card.label}</p>
+              <p className="text-base sm:text-lg font-bold tabular-nums text-foreground">{card.value}</p>
+              <p className="text-xs text-muted-foreground truncate">{card.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* GitHub Contribution Heatmap (NO OUTER BORDER around chart, exactly matching screenshot) */}
-      <div className="rounded-lg bg-card/40 dark:bg-[#0d1117] p-4 sm:p-5">
-        {/* Optional year selector positioned cleanly top-right if needed */}
-        <div className="flex items-center justify-between pb-2">
-          <span className="text-xs font-medium text-muted-foreground">
+      {/* GitHub Contribution Heatmap — Expanded, Left-to-Right Aligned, NO OUTER BORDER */}
+      <div className="w-full rounded-lg bg-card/40 dark:bg-[#0d1117] p-5 sm:p-6">
+        {/* Top Header Row — Left aligned count & Right aligned year switcher */}
+        <div className="flex items-center justify-between pb-3 text-xs sm:text-sm">
+          <span className="font-semibold tracking-tight text-foreground/90">
             {displayTotal.toLocaleString()} contributions in the last year
           </span>
 
-          <div className="flex items-center gap-1 rounded bg-muted/40 p-0.5 text-xs">
+          <div className="flex items-center gap-1 rounded-md bg-muted/50 p-1 text-xs">
             <button
               type="button"
               onClick={() => setSelectedYear("lastYear")}
               className={cn(
-                "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
+                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                 selectedYear === "lastYear"
-                  ? "bg-card text-foreground shadow-xs"
+                  ? "bg-card text-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -332,9 +332,9 @@ export function GitHubActivityCalendar({
                 type="button"
                 onClick={() => setSelectedYear(year)}
                 className={cn(
-                  "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                   selectedYear === year
-                    ? "bg-card text-foreground shadow-xs"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -344,10 +344,10 @@ export function GitHubActivityCalendar({
           </div>
         </div>
 
-        {/* Heatmap Grid SVG */}
-        <div className="relative">
+        {/* Heatmap Grid SVG — Full width, bigger cells, aligned left-to-right */}
+        <div className="relative w-full">
           {isLoading ? (
-            <Skeleton className="h-[120px] w-full rounded-md" />
+            <Skeleton className="h-[135px] w-full rounded-md" />
           ) : (
             <div
               ref={scrollContainerRef}
@@ -355,16 +355,15 @@ export function GitHubActivityCalendar({
             >
               <svg
                 viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-                className="w-full min-w-[725px] max-w-full overflow-visible font-sans"
-                style={{ maxHeight: 135 }}
+                className="w-full h-auto min-w-[720px] max-w-full overflow-visible font-sans block"
               >
                 {/* Month Labels */}
                 {monthLabels.map((lbl, idx) => (
                   <text
                     key={`${lbl.name}-${idx}`}
                     x={MARGIN_LEFT + lbl.col * DISTANCE}
-                    y={12}
-                    className="fill-[#7d8590] text-[10px] font-normal"
+                    y={13}
+                    className="fill-[#7d8590] text-[10.5px] font-normal"
                   >
                     {lbl.name}
                   </text>
@@ -375,9 +374,9 @@ export function GitHubActivityCalendar({
                   <text
                     key={item.label}
                     x={MARGIN_LEFT - 7}
-                    y={MARGIN_TOP + item.row * DISTANCE + 8.5}
+                    y={MARGIN_TOP + item.row * DISTANCE + 9}
                     textAnchor="end"
-                    className="fill-[#7d8590] text-[9px] font-normal"
+                    className="fill-[#7d8590] text-[9.5px] font-normal"
                   >
                     {item.label}
                   </text>
@@ -397,8 +396,8 @@ export function GitHubActivityCalendar({
                         y={y}
                         width={CELL_SIZE}
                         height={CELL_SIZE}
-                        rx={2}
-                        ry={2}
+                        rx={2.2}
+                        ry={2.2}
                         className={cn(
                           "cursor-pointer transition-all duration-100 stroke-[1px]",
                           GITHUB_LEVEL_CLASSES[day.level],
@@ -429,7 +428,7 @@ export function GitHubActivityCalendar({
               className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-full pb-2 animate-in fade-in zoom-in-95 duration-100"
               style={{ left: hoveredDay.clientX, top: hoveredDay.clientY }}
             >
-              <div className="relative rounded bg-[#24292f] dark:bg-[#161b22] px-2.5 py-1 text-xs text-white shadow-md border border-[#30363d] dark:border-[#444c56]">
+              <div className="relative rounded bg-[#24292f] dark:bg-[#161b22] px-2.5 py-1.5 text-xs text-white shadow-md border border-[#30363d] dark:border-[#444c56]">
                 <p className="font-normal whitespace-nowrap">
                   <span className="font-semibold">
                     {hoveredDay.day.count === 0
@@ -451,10 +450,10 @@ export function GitHubActivityCalendar({
           )}
         </div>
 
-        {/* Footer: "Learn how we count contributions" on left, "Less [][][][][] More" on right */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 text-xs">
+        {/* Footer Row — Left aligned "Learn how..." & Right aligned "Less ... More" legend */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 text-xs">
           <div className="flex items-center gap-3">
-            <span className="text-[#7d8590] text-[11px] hover:underline cursor-pointer">
+            <span className="text-[#7d8590] text-xs hover:underline cursor-pointer">
               Learn how we count contributions
             </span>
 
@@ -462,7 +461,7 @@ export function GitHubActivityCalendar({
               <button
                 type="button"
                 onClick={() => onSelectDate?.(null)}
-                className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+                className="inline-flex items-center gap-1 rounded bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
               >
                 <span>Filtered: {selectedDate}</span>
                 <X className="size-3" />
@@ -471,13 +470,13 @@ export function GitHubActivityCalendar({
           </div>
 
           {/* GitHub Authentic Less ... More Legend */}
-          <div className="flex items-center gap-1.5 text-[#7d8590] text-[11px]">
+          <div className="flex items-center gap-1.5 text-[#7d8590] text-xs">
             <span>Less</span>
             <div className="flex items-center gap-1">
               {([0, 1, 2, 3, 4] as const).map((lvl) => (
                 <span
                   key={lvl}
-                  className={cn("size-2.5 rounded-[2px]", LEGEND_LEVEL_STYLES[lvl])}
+                  className={cn("size-3 rounded-[2.2px]", LEGEND_LEVEL_STYLES[lvl])}
                 />
               ))}
             </div>
