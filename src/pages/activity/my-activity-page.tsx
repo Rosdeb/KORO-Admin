@@ -17,6 +17,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { countByKey } from "@/lib/analytics";
 import { formatDateTime } from "@/lib/utils";
 import { Globe, Laptop, Smartphone, Server, HelpCircle, Calendar as CalendarIcon, X } from "lucide-react";
+import { GitHubActivityCalendar } from "@/components/shared/github-activity-calendar";
 
 /**
  * Parses raw device strings/User-Agents into clean labels & icons
@@ -54,11 +55,19 @@ function parseDevice(deviceString?: string | null) {
 }
 
 export function MyActivityPage() {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => getAdminPreferences().pageSize ?? 10);
+
+  // Fetch full activity batch for the year heatmap calendar
+  const { data: calendarData, isLoading: calendarLoading, refetch: refetchCalendar } = useQuery({
+    queryKey: [...queryKeys.activity, "calendar-feed"],
+    queryFn: () => activityApi.list({ page: 0, size: 200 }),
+    staleTime: 60 * 1000,
+  });
 
   // Use the standard, safe pagination parameters expected by the backend
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -97,9 +106,22 @@ export function MyActivityPage() {
 
   const byType = useMemo(() => countByKey(data?.content ?? [], (a) => a.activityType), [data]);
 
-  const hasFilters = Boolean(from || to || selectedType || search);
+  const hasFilters = Boolean(selectedDate || from || to || selectedType || search);
+
+  const handleSelectDate = (dateStr: string | null) => {
+    setSelectedDate(dateStr);
+    if (dateStr) {
+      setFrom(dateStr);
+      setTo(dateStr);
+    } else {
+      setFrom("");
+      setTo("");
+    }
+    setPage(1);
+  };
 
   const handleResetFilters = () => {
+    setSelectedDate(null);
     setFrom("");
     setTo("");
     setSelectedType(null);
@@ -107,18 +129,23 @@ export function MyActivityPage() {
     setPage(1);
   };
 
+  const handleRefreshAll = () => {
+    void refetch();
+    void refetchCalendar();
+  };
+
   if (error) {
-    return <ErrorState error={error} onRetry={() => refetch()} className="mt-10" />;
+    return <ErrorState error={error} onRetry={handleRefreshAll} className="mt-10" />;
   }
 
   return (
-    <div className="space-y-4">
-      {/* Clean Minimal Header */}
+    <div className="space-y-6">
+      {/* Clean Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">My Activity</h1>
-          <p className="text-xs text-muted-foreground">
-            Audit history of your personal platform actions and edits
+          <h1 className="text-xl font-bold tracking-tight text-foreground">My Activity</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Audit history of your personal platform actions, edits, and contributions
           </p>
         </div>
 
@@ -130,13 +157,22 @@ export function MyActivityPage() {
           )}
 
           <RefreshButton
-            onRefresh={() => {
-              void refetch();
-            }}
-            isRefreshing={isFetching}
+            onRefresh={handleRefreshAll}
+            isRefreshing={isFetching || calendarLoading}
           />
         </div>
       </div>
+
+      {/* GitHub-style Contribution Heatmap */}
+      <GitHubActivityCalendar
+        activities={calendarData?.content ?? data?.content ?? []}
+        totalActivities={data?.totalElements}
+        isLoading={calendarLoading && isLoading}
+        selectedDate={selectedDate}
+        onSelectDate={handleSelectDate}
+        title="My Activity Calendar"
+        subtitle="Contribution activity tracked in Asia/Dhaka time (UTC+06:00)"
+      />
 
       {/* Minimal Inline Filter Row */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
@@ -185,6 +221,7 @@ export function MyActivityPage() {
               value={from}
               onChange={(e) => {
                 setFrom(e.target.value);
+                if (selectedDate && e.target.value !== selectedDate) setSelectedDate(null);
                 setPage(1);
               }}
               className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
@@ -199,6 +236,7 @@ export function MyActivityPage() {
               value={to}
               onChange={(e) => {
                 setTo(e.target.value);
+                if (selectedDate && e.target.value !== selectedDate) setSelectedDate(null);
                 setPage(1);
               }}
               className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
@@ -218,8 +256,8 @@ export function MyActivityPage() {
         </div>
       </div>
 
-      {/* Flat Minimal Table Container (No outside card design) */}
-      <div className="overflow-hidden rounded-lg border border-border">
+      {/* Flat Minimal Table Container */}
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         {isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 6 }).map((_, i) => (
