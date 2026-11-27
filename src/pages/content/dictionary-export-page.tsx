@@ -20,6 +20,7 @@ import {
   FileUp,
   Columns,
   LayoutGrid,
+  AlignLeft,
   BookMarked,
   Sparkles,
 } from "lucide-react";
@@ -575,7 +576,7 @@ export function DictionaryExportPage() {
                     <Label className="text-xs font-medium">Book Layout</Label>
                     <Select
                       value={bookConfig.layout}
-                      onValueChange={(val: "two-column" | "grid" | "pocket") =>
+                      onValueChange={(val: "two-column" | "grid" | "compact-inline") =>
                         setBookConfig((c) => ({ ...c, layout: val }))
                       }
                     >
@@ -591,6 +592,11 @@ export function DictionaryExportPage() {
                         <SelectItem value="grid" className="text-xs">
                           <span className="flex items-center gap-2">
                             <LayoutGrid className="size-3.5" /> Tabular Grid
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="compact-inline" className="text-xs">
+                          <span className="flex items-center gap-2">
+                            <AlignLeft className="size-3.5" /> Compact Inline
                           </span>
                         </SelectItem>
                       </SelectContent>

@@ -4,6 +4,7 @@ import {
   BookOpen,
   LayoutGrid,
   Columns,
+  AlignLeft,
   Settings2,
   RotateCcw,
 } from "lucide-react";
@@ -225,7 +226,7 @@ export function BookPreviewModal({
 
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Layout Style</Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setConfig((c) => ({ ...c, layout: "two-column" }))}
@@ -236,7 +237,7 @@ export function BookPreviewModal({
                       }`}
                     >
                       <Columns className="size-4" />
-                      <span className="text-[11px]">2-Column Lexicon</span>
+                      <span className="text-[10px] text-center leading-tight">2-Column</span>
                     </button>
                     <button
                       type="button"
@@ -248,7 +249,19 @@ export function BookPreviewModal({
                       }`}
                     >
                       <LayoutGrid className="size-4" />
-                      <span className="text-[11px]">Tabular Grid</span>
+                      <span className="text-[10px] text-center leading-tight">Tabular</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((c) => ({ ...c, layout: "compact-inline" }))}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-left transition-colors ${
+                        config.layout === "compact-inline"
+                          ? "bg-primary/10 border-primary text-primary font-medium"
+                          : "border-border hover:bg-muted/50 text-muted-foreground"
+                      }`}
+                    >
+                      <AlignLeft className="size-4" />
+                      <span className="text-[10px] text-center leading-tight">Compact</span>
                     </button>
                   </div>
                 </div>

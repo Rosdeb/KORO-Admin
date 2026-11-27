@@ -24,7 +24,7 @@ export interface BookConfig {
   author: string;
   edition: string;
   primaryLanguage: string;
-  layout: "two-column" | "grid" | "pocket";
+  layout: "two-column" | "grid" | "compact-inline";
   includeCover: boolean;
   includeToc: boolean;
   includeId: boolean;
@@ -49,7 +49,6 @@ export const DEFAULT_BOOK_CONFIG: BookConfig = {
  * Handles quoted fields, escaped quotes, multiline values, and UTF-8 BOM.
  */
 export function parseCsv(text: string): string[][] {
-  // Strip BOM if present
   let clean = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   clean = clean.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
@@ -91,7 +90,6 @@ export function parseCsv(text: string): string[][] {
         continue;
       } else if (char === "\n") {
         currentRow.push(currentVal.trim());
-        // Only push row if it contains at least one non-empty value
         if (currentRow.some((val) => val.length > 0)) {
           rows.push(currentRow);
         }
@@ -132,13 +130,11 @@ export function buildBookData(rows: string[][], preferredPrimaryLang?: string): 
   }
 
   const rawHeaders = rows[0].map((h) => h.trim());
-  // Find ID column index if present
   let idColIndex = rawHeaders.findIndex((h) => /^id$/i.test(h) || /concept.*id/i.test(h));
   if (idColIndex === -1 && rawHeaders[0] && rawHeaders[0].length === 24 && /^[0-9a-fA-F]+$/.test(rawHeaders[0])) {
     idColIndex = 0;
   }
 
-  // Language columns are non-ID columns
   const languageColumns: { index: number; name: string }[] = [];
   rawHeaders.forEach((colName, idx) => {
     if (idx !== idColIndex && colName.length > 0) {
@@ -185,7 +181,6 @@ export function buildBookData(rows: string[][], preferredPrimaryLang?: string): 
       if (/^[A-Z]$/.test(firstChar)) {
         letter = firstChar;
       } else if (/^[\u0980-\u09FF]$/.test(firstChar)) {
-        // Bengali unicode block
         letter = firstChar;
       } else {
         letter = firstChar || "#";
@@ -226,7 +221,7 @@ export function buildBookData(rows: string[][], preferredPrimaryLang?: string): 
 
 /**
  * Generates publication-ready HTML for the dictionary book.
- * Includes print-specific CSS (@page, page-break, multi-column lexicon layout).
+ * Perfectly aligned typography, standard A4 margins, repeating headers, and zero overflowing cards.
  */
 export function generateBookHtml(data: DictionaryBookData, config: BookConfig): string {
   const primaryLangName = config.primaryLanguage || data.languages[0] || "Headword";
@@ -236,105 +231,125 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
 
   const fontSizeCss =
     config.fontSize === "sm"
-      ? "font-size: 9pt; line-height: 1.35;"
+      ? "font-size: 8.5pt; line-height: 1.35;"
       : config.fontSize === "lg"
-      ? "font-size: 11pt; line-height: 1.5;"
-      : "font-size: 10pt; line-height: 1.4;";
+      ? "font-size: 10.5pt; line-height: 1.5;"
+      : "font-size: 9.5pt; line-height: 1.4;";
 
+  // 1. Cover Page
   const coverHtml = config.includeCover
     ? `
     <div class="book-cover page-break-after">
-      <div class="cover-inner">
-        <div class="cover-ornament-top">❖</div>
-        <div class="cover-badge">KOROT DICTIONARY SERIES</div>
+      <div class="cover-frame">
+        <div class="cover-header-ornament">
+          <span class="ornament-dot">✦</span>
+          <span class="ornament-line"></span>
+          <span class="ornament-symbol">❖</span>
+          <span class="ornament-line"></span>
+          <span class="ornament-dot">✦</span>
+        </div>
+
+        <div class="cover-series-pill">KOROT MULTILINGUAL LEXICON</div>
+
         <h1 class="cover-title">${escapeHtml(config.title)}</h1>
-        <div class="cover-divider"></div>
+        <div class="cover-title-rule"></div>
         <h2 class="cover-subtitle">${escapeHtml(config.subtitle)}</h2>
-        <div class="cover-languages">
-          ${data.languages
-            .map((lang) => `<span class="cover-lang-tag">${escapeHtml(lang)}</span>`)
-            .join("")}
+
+        <div class="cover-languages-box">
+          <div class="cover-lang-label">DOCUMENTED LANGUAGES</div>
+          <div class="cover-lang-chips">
+            ${data.languages
+              .map((lang) => `<span class="cover-lang-chip">${escapeHtml(lang)}</span>`)
+              .join("")}
+          </div>
         </div>
-        <div class="cover-meta">
-          <p class="cover-edition">${escapeHtml(config.edition)}</p>
-          <p class="cover-author">${escapeHtml(config.author)}</p>
-          <p class="cover-stats">${data.totalEntries} Lexical Concepts • Comprehensive Edition</p>
+
+        <div class="cover-bottom-meta">
+          <div class="meta-row font-medium">${escapeHtml(config.edition)}</div>
+          <div class="meta-row text-muted">${escapeHtml(config.author)}</div>
+          <div class="meta-badge">${data.totalEntries} Total Lexical Concepts • Fully Indexed</div>
         </div>
-        <div class="cover-ornament-bottom">❖</div>
+
+        <div class="cover-footer-ornament">❖</div>
       </div>
     </div>
   `
     : "";
 
+  // 2. Table of Contents
   const tocHtml = config.includeToc
     ? `
     <div class="book-toc page-break-after">
-      <div class="toc-header">
+      <div class="toc-title-bar">
         <h2>Table of Contents & Index</h2>
-        <div class="toc-divider"></div>
+        <span class="toc-badge">${data.totalEntries} Entries • ${data.letterGroups.length} Sections</span>
       </div>
-      <div class="toc-summary-box">
-        <div class="toc-stat">
-          <span class="stat-number">${data.totalEntries}</span>
-          <span class="stat-label">Total Words</span>
+
+      <div class="toc-summary-deck">
+        <div class="deck-card">
+          <span class="deck-num">${data.totalEntries}</span>
+          <span class="deck-lbl">Total Words</span>
         </div>
-        <div class="toc-stat">
-          <span class="stat-number">${data.languages.length}</span>
-          <span class="stat-label">Languages</span>
+        <div class="deck-card">
+          <span class="deck-num">${data.languages.length}</span>
+          <span class="deck-lbl">Languages</span>
         </div>
-        <div class="toc-stat">
-          <span class="stat-number">${data.letterGroups.length}</span>
-          <span class="stat-label">Alphabet Sections</span>
+        <div class="deck-card">
+          <span class="deck-num">${data.letterGroups.length}</span>
+          <span class="deck-lbl">Alphabet Chapters</span>
+        </div>
+        <div class="deck-card">
+          <span class="deck-num">${escapeHtml(primaryLangName)}</span>
+          <span class="deck-lbl">Primary Index</span>
         </div>
       </div>
-      <div class="toc-grid">
+
+      <div class="toc-columns">
         ${data.letterGroups
           .map(
             (g) => `
-          <div class="toc-item">
-            <span class="toc-letter">${escapeHtml(g.letter)}</span>
-            <span class="toc-dots"></span>
-            <span class="toc-count">${g.entries.length} entries</span>
+          <div class="toc-line">
+            <span class="toc-char">${escapeHtml(g.letter)}</span>
+            <span class="toc-leader"></span>
+            <span class="toc-val">${g.entries.length} words</span>
           </div>
         `,
           )
           .join("")}
       </div>
-      <div class="toc-notice">
-        <p><strong>Reading Guide:</strong> Headwords are indexed under <em>${escapeHtml(
+
+      <div class="toc-instructions">
+        <strong>Structure Guide:</strong> All entries are alphabetized under the primary headword language (<em>${escapeHtml(
           primaryLangName,
-        )}</em>. Cross-lingual definitions and synonyms follow each headword badge.</p>
+        )}</em>). Cross-lingual synonyms and definitions appear in strict vertical alignment under each headword card.
       </div>
     </div>
   `
     : "";
 
-  // Content pages layout
-  const isTwoColumn = config.layout === "two-column";
-  const isGrid = config.layout === "grid";
-
+  // 3. Body Content based on layout
   let bodyContent = "";
 
-  if (isGrid) {
-    // Multi-lingual Tabular Grid
+  if (config.layout === "grid") {
+    // Perfectly Aligned Multi-lingual Comparative Table
     bodyContent = `
-      <div class="dictionary-grid-view">
+      <div class="dictionary-view grid-layout">
         ${data.letterGroups
           .map(
             (group) => `
-          <div class="letter-section">
-            <div class="letter-marker-banner">
-              <span class="letter-marker-char">${escapeHtml(group.letter)}</span>
-              <span class="letter-marker-desc">${group.entries.length} entries</span>
+          <div class="letter-section-container">
+            <div class="letter-banner">
+              <span class="letter-char">${escapeHtml(group.letter)}</span>
+              <span class="letter-meta">${group.entries.length} concepts</span>
             </div>
-            <table class="dictionary-table">
+            <table class="lexicon-table">
               <thead>
                 <tr>
-                  <th style="width: 25%;">${escapeHtml(primaryLangName)}</th>
+                  <th class="th-primary" style="width: 28%;">${escapeHtml(primaryLangName)}</th>
                   ${otherLanguages
                     .map((lang) => `<th>${escapeHtml(lang)}</th>`)
                     .join("")}
-                  ${config.includeId ? '<th style="width: 15%;">ID</th>' : ""}
+                  ${config.includeId ? '<th class="th-id" style="width: 12%;">ID</th>' : ""}
                 </tr>
               </thead>
               <tbody>
@@ -345,17 +360,17 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
                     );
                     const headwordVal = primaryTrans ? primaryTrans.text : entry.headword;
                     return `
-                    <tr class="entry-row">
-                      <td class="col-primary font-bold">${escapeHtml(headwordVal)}</td>
+                    <tr class="table-row">
+                      <td class="td-primary">${escapeHtml(headwordVal)}</td>
                       ${otherLanguages
                         .map((lang) => {
                           const t = entry.translations.find(
                             (item) => item.language.toLowerCase() === lang.toLowerCase(),
                           );
-                          return `<td>${t ? escapeHtml(t.text) : '<span class="empty-cell">—</span>'}</td>`;
+                          return `<td class="td-lang">${t ? escapeHtml(t.text) : '<span class="cell-empty">—</span>'}</td>`;
                         })
                         .join("")}
-                      ${config.includeId ? `<td class="col-id font-mono">${escapeHtml(entry.id)}</td>` : ""}
+                      ${config.includeId ? `<td class="td-id">${escapeHtml(entry.id.slice(-8))}</td>` : ""}
                     </tr>
                   `;
                   })
@@ -368,20 +383,19 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
           .join("")}
       </div>
     `;
-  } else {
-    // Classic 2-Column or Pocket Lexicon Layout
+  } else if (config.layout === "compact-inline") {
+    // Compact Oxford Style Inline Paragraphs
     bodyContent = `
-      <div class="dictionary-lexicon-view ${isTwoColumn ? "two-columns" : "single-column"}">
+      <div class="dictionary-view compact-layout">
         ${data.letterGroups
           .map(
             (group) => `
-          <div class="letter-block">
-            <div class="letter-marker-header">
-              <span class="letter-marker-char">${escapeHtml(group.letter)}</span>
-              <span class="letter-marker-line"></span>
-              <span class="letter-marker-count">${group.entries.length} words</span>
+          <div class="compact-letter-block">
+            <div class="letter-banner compact-banner">
+              <span class="letter-char">${escapeHtml(group.letter)}</span>
+              <span class="letter-meta">${group.entries.length} words</span>
             </div>
-            <div class="entries-stream">
+            <div class="compact-entries-stream">
               ${group.entries
                 .map((entry) => {
                   const primaryTrans = entry.translations.find(
@@ -393,22 +407,74 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
                   );
 
                   return `
-                  <div class="entry-card">
-                    <div class="entry-header">
-                      <span class="entry-headword">${escapeHtml(headwordVal)}</span>
-                      ${
-                        config.includeId
-                          ? `<span class="entry-id-badge">${escapeHtml(entry.id.slice(-6))}</span>`
-                          : ""
-                      }
-                    </div>
-                    <div class="entry-definitions">
+                  <div class="compact-entry-item">
+                    <span class="compact-bullet">▪</span>
+                    <strong class="compact-headword">${escapeHtml(headwordVal)}</strong>
+                    ${config.includeId ? `<span class="compact-id">[${escapeHtml(entry.id.slice(-6))}]</span>` : ""}
+                    <span class="compact-definitions">
                       ${targetTranslations
                         .map(
                           (t) => `
-                        <div class="entry-lang-row">
-                          <span class="lang-pill">${escapeHtml(t.language)}</span>
-                          <span class="lang-translation">${escapeHtml(t.text)}</span>
+                        <span class="compact-lang-def">
+                          <span class="compact-lang-lbl">${escapeHtml(t.language)}:</span>
+                          <span class="compact-lang-val">${escapeHtml(t.text)}</span>
+                        </span>
+                      `,
+                        )
+                        .join(" • ")}
+                    </span>
+                  </div>
+                `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+  } else {
+    // Classic 2-Column Aligned Lexicon Cards (Default)
+    bodyContent = `
+      <div class="dictionary-view two-column-layout">
+        ${data.letterGroups
+          .map(
+            (group) => `
+          <div class="letter-group-block">
+            <div class="letter-banner">
+              <span class="letter-char">${escapeHtml(group.letter)}</span>
+              <span class="letter-line"></span>
+              <span class="letter-meta">${group.entries.length} words</span>
+            </div>
+            <div class="entries-column-flow">
+              ${group.entries
+                .map((entry) => {
+                  const primaryTrans = entry.translations.find(
+                    (t) => t.language.toLowerCase() === primaryLangName.toLowerCase(),
+                  );
+                  const headwordVal = primaryTrans ? primaryTrans.text : entry.headword;
+                  const targetTranslations = entry.translations.filter(
+                    (t) => t.language.toLowerCase() !== primaryLangName.toLowerCase(),
+                  );
+
+                  return `
+                  <div class="lexicon-card">
+                    <div class="card-head">
+                      <div class="headword-title">${escapeHtml(headwordVal)}</div>
+                      ${
+                        config.includeId
+                          ? `<div class="headword-id">${escapeHtml(entry.id.slice(-6))}</div>`
+                          : ""
+                      }
+                    </div>
+                    <div class="translations-grid">
+                      ${targetTranslations
+                        .map(
+                          (t) => `
+                        <div class="trans-row">
+                          <div class="trans-label">${escapeHtml(t.language)}</div>
+                          <div class="trans-value">${escapeHtml(t.text)}</div>
                         </div>
                       `,
                         )
@@ -433,15 +499,55 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
   <meta charset="UTF-8">
   <title>${escapeHtml(config.title)}</title>
   <style>
+    /* A4 Standards & Print Paged Media */
     @page {
       size: A4 portrait;
-      margin: 14mm 16mm;
-      @bottom-center {
-        content: counter(page);
+      margin: 16mm 14mm 16mm 14mm;
+      @top-left {
+        content: "${escapeHtml(config.title)}";
         font-family: inherit;
-        font-size: 8pt;
+        font-size: 7.5pt;
+        font-weight: 600;
         color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 0.5pt solid #cbd5e1;
+        padding-bottom: 2mm;
       }
+      @top-right {
+        content: "${escapeHtml(config.subtitle)}";
+        font-family: inherit;
+        font-size: 7.5pt;
+        color: #64748b;
+        border-bottom: 0.5pt solid #cbd5e1;
+        padding-bottom: 2mm;
+      }
+      @bottom-left {
+        content: "${escapeHtml(config.author)}";
+        font-family: inherit;
+        font-size: 7.5pt;
+        color: #94a3b8;
+        border-top: 0.5pt solid #e2e8f0;
+        padding-top: 2mm;
+      }
+      @bottom-right {
+        content: "Page " counter(page);
+        font-family: inherit;
+        font-size: 7.5pt;
+        font-weight: 600;
+        color: #64748b;
+        border-top: 0.5pt solid #e2e8f0;
+        padding-top: 2mm;
+      }
+    }
+
+    @page :first {
+      margin-top: 0;
+      margin-bottom: 0;
+      @top-left { content: none; }
+      @top-right { content: none; }
+      @bottom-left { content: none; }
+      @bottom-right { content: none; }
     }
 
     *, *::before, *::after {
@@ -451,11 +557,12 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Bengali", Kalpurush, SolaimanLipi, Vrinda, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "SolaimanLipi", "Kalpurush", "Vrinda", Arial, sans-serif;
       color: #0f172a;
       background: #ffffff;
       ${fontSizeCss}
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     .page-break-after {
@@ -463,309 +570,443 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
       break-after: page;
     }
 
-    /* Cover Page */
+    /* =========================================
+       1. COVER PAGE
+       ========================================= */
     .book-cover {
-      min-height: 85vh;
+      min-height: 92vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      text-align: center;
-      padding: 30px 20px;
+      padding: 20px 10px;
     }
-    .cover-inner {
-      border: 3px double #0f172a;
-      padding: 40px 30px;
+    .cover-frame {
+      border: 2px solid #0f172a;
+      outline: 1px solid #cbd5e1;
+      outline-offset: 4px;
+      padding: 45px 35px;
       width: 100%;
-      max-width: 550px;
+      max-width: 540px;
       margin: 0 auto;
-      border-radius: 4px;
+      text-align: center;
+      background: #ffffff;
     }
-    .cover-ornament-top, .cover-ornament-bottom {
-      font-size: 22px;
+    .cover-header-ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
       color: #475569;
-      letter-spacing: 4px;
+      font-size: 11pt;
+      margin-bottom: 20px;
     }
-    .cover-badge {
+    .ornament-line {
       display: inline-block;
-      margin-top: 15px;
-      font-size: 9pt;
+      width: 40px;
+      height: 1px;
+      background: #cbd5e1;
+    }
+    .cover-series-pill {
+      display: inline-block;
+      font-size: 8pt;
       font-weight: 700;
       letter-spacing: 2px;
-      color: #2563eb;
       text-transform: uppercase;
-      padding: 3px 12px;
+      color: #1e40af;
       background: #eff6ff;
-      border-radius: 9999px;
       border: 1px solid #bfdbfe;
+      padding: 3px 14px;
+      border-radius: 9999px;
+      margin-bottom: 18px;
     }
     .cover-title {
-      font-size: 26pt;
+      font-size: 24pt;
       font-weight: 800;
-      line-height: 1.15;
-      margin-top: 20px;
+      line-height: 1.2;
       color: #0f172a;
       letter-spacing: -0.5px;
+      margin-bottom: 12px;
     }
-    .cover-divider {
-      width: 80px;
-      height: 3px;
+    .cover-title-rule {
+      width: 60px;
+      height: 2.5px;
       background: #2563eb;
-      margin: 18px auto;
+      margin: 0 auto 14px auto;
     }
     .cover-subtitle {
-      font-size: 13pt;
+      font-size: 12pt;
       font-weight: 500;
       color: #334155;
       line-height: 1.4;
-      margin-bottom: 25px;
-    }
-    .cover-languages {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
       margin-bottom: 30px;
     }
-    .cover-lang-tag {
-      font-size: 9.5pt;
-      font-weight: 600;
-      padding: 4px 10px;
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      color: #1e293b;
-    }
-    .cover-meta {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 20px;
-      margin-bottom: 20px;
-      color: #64748b;
-      font-size: 9pt;
-      line-height: 1.6;
-    }
-    .cover-author {
-      font-weight: 600;
-      color: #334155;
-    }
-
-    /* Table of Contents */
-    .book-toc {
-      padding: 20px 0;
-    }
-    .toc-header h2 {
-      font-size: 18pt;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -0.5px;
-    }
-    .toc-divider {
-      height: 2px;
-      background: #0f172a;
-      margin: 10px 0 20px 0;
-    }
-    .toc-summary-box {
-      display: flex;
-      gap: 20px;
-      padding: 14px 18px;
+    .cover-languages-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      margin-bottom: 24px;
+      padding: 14px;
+      margin-bottom: 35px;
     }
-    .toc-stat {
-      flex: 1;
-      text-align: center;
+    .cover-lang-label {
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #64748b;
+      margin-bottom: 8px;
     }
-    .stat-number {
-      display: block;
-      font-size: 16pt;
-      font-weight: 800;
-      color: #2563eb;
+    .cover-lang-chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
     }
-    .stat-label {
+    .cover-lang-chip {
+      font-size: 9pt;
+      font-weight: 600;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .cover-bottom-meta {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 18px;
+      margin-bottom: 15px;
+      font-size: 8.5pt;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .cover-bottom-meta .font-medium {
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .meta-badge {
+      display: inline-block;
+      margin-top: 8px;
       font-size: 8pt;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .cover-footer-ornament {
+      color: #94a3b8;
+      font-size: 13pt;
+      margin-top: 8px;
+    }
+
+    /* =========================================
+       2. TABLE OF CONTENTS
+       ========================================= */
+    .book-toc {
+      padding: 10px 0;
+    }
+    .toc-title-bar {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .toc-title-bar h2 {
+      font-size: 17pt;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+    .toc-badge {
+      font-size: 8pt;
       color: #64748b;
       font-weight: 600;
     }
-    .toc-grid {
+    .toc-summary-deck {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px 16px;
-      margin-bottom: 24px;
+      gap: 12px;
+      margin-bottom: 22px;
     }
-    .toc-item {
+    .deck-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+    }
+    .deck-num {
+      display: block;
+      font-size: 15pt;
+      font-weight: 800;
+      color: #2563eb;
+      line-height: 1.2;
+    }
+    .deck-lbl {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .toc-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px 18px;
+      margin-bottom: 25px;
+    }
+    .toc-line {
       display: flex;
       align-items: baseline;
-      font-size: 9.5pt;
+      font-size: 9pt;
+      padding: 2px 0;
     }
-    .toc-letter {
+    .toc-char {
       font-weight: 700;
-      font-size: 11pt;
       color: #0f172a;
       min-width: 20px;
+      font-size: 10.5pt;
     }
-    .toc-dots {
+    .toc-leader {
       flex: 1;
       border-bottom: 1px dotted #cbd5e1;
       margin: 0 6px;
     }
-    .toc-count {
+    .toc-val {
+      font-size: 8pt;
       color: #64748b;
-      font-size: 8.5pt;
     }
-    .toc-notice {
-      margin-top: 30px;
-      padding: 12px 16px;
+    .toc-instructions {
+      padding: 10px 14px;
       background: #eff6ff;
       border-left: 3px solid #2563eb;
       font-size: 8.5pt;
       color: #1e40af;
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 4px 4px 0;
+      line-height: 1.5;
     }
 
-    /* Running Header */
-    .running-header {
+    /* =========================================
+       3. GENERAL LETTER MARKERS
+       ========================================= */
+    .letter-banner {
       display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 5px;
-      margin-bottom: 15px;
-      font-size: 8pt;
+      align-items: center;
+      gap: 8px;
+      break-after: avoid;
+      page-break-after: avoid;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin: 14px 0 8px 0;
+      padding-bottom: 3px;
+      border-bottom: 1.5px solid #0f172a;
+    }
+    .letter-char {
+      font-size: 14pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .letter-line {
+      flex: 1;
+      height: 1px;
+      background: #cbd5e1;
+    }
+    .letter-meta {
+      font-size: 7.5pt;
+      font-weight: 600;
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    /* Multi-column Lexicon View */
-    .dictionary-lexicon-view.two-columns {
+    /* =========================================
+       4. TWO-COLUMN LEXICON LAYOUT (DEFAULT)
+       ========================================= */
+    .dictionary-view.two-column-layout {
       column-count: 2;
-      column-gap: 20px;
+      column-gap: 18px;
       column-rule: 1px solid #e2e8f0;
     }
-    .letter-block {
+    .letter-group-block {
       break-inside: auto;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .letter-marker-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      break-after: avoid;
+    .lexicon-card {
       break-inside: avoid;
-      margin: 12px 0 8px 0;
-      padding-bottom: 3px;
-      border-bottom: 1.5px solid #0f172a;
+      page-break-inside: avoid;
+      padding: 5px 0 6px 0;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 3px;
     }
-    .letter-marker-char {
-      font-size: 15pt;
-      font-weight: 800;
-      color: #0f172a;
-      line-height: 1;
-    }
-    .letter-marker-line {
-      flex: 1;
-      height: 1px;
-      background: #cbd5e1;
-    }
-    .letter-marker-count {
-      font-size: 7.5pt;
-      color: #64748b;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .entry-card {
-      break-inside: avoid;
-      padding: 5px 0;
-      border-bottom: 1px dashed #e2e8f0;
-      margin-bottom: 4px;
-    }
-    .entry-header {
+    .card-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 6px;
+      margin-bottom: 3px;
     }
-    .entry-headword {
+    .headword-title {
+      font-size: 10pt;
       font-weight: 700;
       color: #0f172a;
-      font-size: 10.5pt;
+      line-height: 1.25;
     }
-    .entry-id-badge {
+    .headword-id {
       font-size: 6.5pt;
       font-family: monospace;
       color: #94a3b8;
     }
-    .entry-definitions {
-      margin-top: 3px;
+    .translations-grid {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 2.5px;
     }
-    .entry-lang-row {
-      display: flex;
+    /* Strictly Aligned Columns for all translations */
+    .trans-row {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      column-gap: 8px;
       align-items: baseline;
-      gap: 6px;
-      font-size: 9pt;
+      font-size: 8.5pt;
       line-height: 1.35;
     }
-    .lang-pill {
+    .trans-label {
       font-size: 6.5pt;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
       color: #2563eb;
       background: #eff6ff;
       border: 1px solid #dbeafe;
-      padding: 0 4px;
+      padding: 1px 4px;
       border-radius: 3px;
+      text-align: center;
       white-space: nowrap;
-      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .lang-translation {
+    .trans-value {
       color: #334155;
+      word-break: break-word;
     }
 
-    /* Tabular Grid View */
-    .dictionary-table {
+    /* =========================================
+       5. COMPACT INLINE LEXICON LAYOUT
+       ========================================= */
+    .dictionary-view.compact-layout {
+      column-count: 2;
+      column-gap: 18px;
+      column-rule: 1px solid #e2e8f0;
+    }
+    .compact-letter-block {
+      break-inside: auto;
+      margin-bottom: 12px;
+    }
+    .compact-banner {
+      margin-bottom: 6px;
+    }
+    .compact-entry-item {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      padding: 3px 0;
+      border-bottom: 1px dotted #f1f5f9;
+      font-size: 8.5pt;
+      line-height: 1.4;
+    }
+    .compact-bullet {
+      color: #2563eb;
+      font-size: 6pt;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    .compact-headword {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-right: 4px;
+    }
+    .compact-id {
+      font-size: 6.5pt;
+      font-family: monospace;
+      color: #94a3b8;
+      margin-right: 4px;
+    }
+    .compact-definitions {
+      color: #334155;
+    }
+    .compact-lang-lbl {
+      font-size: 7.5pt;
+      font-style: italic;
+      color: #64748b;
+      margin-right: 2px;
+    }
+    .compact-lang-val {
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    /* =========================================
+       6. TABULAR GRID COMPARATIVE LAYOUT
+       ========================================= */
+    .dictionary-view.grid-layout {
+      width: 100%;
+    }
+    .letter-section-container {
+      margin-bottom: 18px;
+      break-inside: auto;
+    }
+    .lexicon-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 9pt;
+      margin-top: 6px;
+      font-size: 8.5pt;
     }
-    .dictionary-table th {
+    .lexicon-table thead {
+      display: table-header-group; /* repeats header on every printed page */
+    }
+    .lexicon-table th {
       background: #f1f5f9;
       color: #0f172a;
       font-weight: 700;
       text-align: left;
       padding: 6px 8px;
       border: 1px solid #cbd5e1;
-      font-size: 8pt;
+      font-size: 7.5pt;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .dictionary-table td {
-      padding: 6px 8px;
+    .lexicon-table td {
+      padding: 5.5px 8px;
       border: 1px solid #e2e8f0;
       vertical-align: top;
+      line-height: 1.35;
     }
-    .dictionary-table tr:nth-child(even) {
+    .lexicon-table tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .lexicon-table tr:nth-child(even) {
       background: #f8fafc;
     }
-    .dictionary-table .font-bold {
+    .td-primary {
       font-weight: 700;
       color: #0f172a;
     }
-    .dictionary-table .empty-cell {
+    .td-lang {
+      color: #334155;
+    }
+    .td-id {
+      font-family: monospace;
+      font-size: 7pt;
+      color: #94a3b8;
+    }
+    .cell-empty {
       color: #cbd5e1;
     }
-    .col-id {
-      font-size: 7.5pt;
-      color: #64748b;
-    }
 
-    /* Print specifics */
+    /* Screen and Print Adjustments */
     @media print {
       body {
         -webkit-print-color-adjust: exact !important;
@@ -780,10 +1021,6 @@ export function generateBookHtml(data: DictionaryBookData, config: BookConfig): 
 <body>
   ${coverHtml}
   ${tocHtml}
-  <div class="running-header">
-    <span>${escapeHtml(config.title)}</span>
-    <span>${escapeHtml(config.subtitle)}</span>
-  </div>
   ${bodyContent}
 </body>
 </html>`;
@@ -813,7 +1050,6 @@ export function printDictionaryBook(data: DictionaryBookData, config: BookConfig
   printWindow.document.write(html);
   printWindow.document.close();
 
-  // Wait for fonts and styles to render before triggering print
   setTimeout(() => {
     printWindow.focus();
     printWindow.print();
