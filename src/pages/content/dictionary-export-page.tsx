@@ -41,95 +41,109 @@ export function DictionaryExportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Dictionary Export"
         description="Download complete dictionary records in standardized CSV format with Unicode support"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Export Card */}
         <Card className="lg:col-span-2 border-border shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <FileSpreadsheet className="size-5.5" />
+          <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary mt-0.5 sm:mt-0">
+                  <FileSpreadsheet className="size-5 sm:size-5.5" />
                 </div>
-                <div>
-                  <CardTitle className="text-xl font-bold tracking-tight">Export Dictionary</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground mt-0.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold tracking-tight">
+                      Export Dictionary
+                    </CardTitle>
+                    <Badge
+                      variant="outline"
+                      className="sm:hidden inline-flex gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-[11px] px-2 py-0.5"
+                    >
+                      <CheckCircle2 className="size-3" />
+                      Ready
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-relaxed">
                     Complete Koch–Bangla–English dictionary
                   </CardDescription>
                 </div>
               </div>
-              <Badge variant="outline" className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+              <Badge
+                variant="outline"
+                className="hidden sm:inline-flex shrink-0 gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-xs px-2.5 py-1 self-start"
+              >
                 <CheckCircle2 className="size-3" />
                 Ready to Export
               </Badge>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
             {/* Parameters Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/40 border border-border/60">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-muted/40 border border-border/60">
+              <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                   Format
                 </p>
-                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-emerald-500" />
+                <p className="text-xs sm:text-sm font-semibold text-foreground flex items-center justify-center sm:justify-start gap-1.5">
+                  <span className="size-1.5 sm:size-2 rounded-full bg-emerald-500 shrink-0" />
                   CSV
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0 border-x border-border/40 px-1 sm:px-0 sm:border-0">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                   Export scope
                 </p>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
                   All records
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                   Encoding
                 </p>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
                   UTF-8 BOM
                 </p>
               </div>
             </div>
 
             {/* Structure info callout */}
-            <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                 <span className="text-xs font-semibold text-foreground">CSV Columns Structure</span>
-                <span className="text-[11px] text-muted-foreground font-mono">text/csv; charset=UTF-8</span>
+                <span className="text-[11px] text-muted-foreground font-mono self-start sm:self-auto">text/csv; charset=UTF-8</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {["ID", "Koch", "Bangla", "English"].map((col) => (
                   <span
                     key={col}
-                    className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-mono font-medium text-foreground border border-border"
+                    className="inline-flex items-center rounded-md bg-muted px-2 sm:px-2.5 py-1 text-xs font-mono font-medium text-foreground border border-border"
                   >
                     {col}
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed text-left">
                 Includes all records and translations across Koch, Bangla, and English. Pre-configured with a UTF-8 Byte Order Mark (BOM) so Bangla and Koch scripts render natively without font corruption in Microsoft Excel, Google Sheets, LibreOffice, and data tools.
               </p>
             </div>
 
             {/* Primary Action Button */}
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-1 sm:pt-2">
               <Button
                 size="lg"
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="gap-2 px-6 font-semibold shadow-sm"
+                className="w-full sm:w-auto gap-2 px-6 font-semibold shadow-sm h-11 text-sm sm:text-base justify-center"
               >
                 {isDownloading ? (
                   <>
@@ -150,29 +164,29 @@ export function DictionaryExportPage() {
         {/* Sidebar info card */}
         <div className="space-y-4">
           <Card className="border-border">
-            <CardHeader className="pb-3">
+            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
               <CardTitle className="text-sm font-semibold">Dictionary Summary</CardTitle>
               <CardDescription className="text-xs">Current database records</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50">
-                <span className="text-muted-foreground flex items-center gap-1.5">
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 gap-2">
+                <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <Database className="size-3.5" /> Total Concepts
                 </span>
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-foreground truncate">
                   {totalConcepts !== null ? formatNumber(totalConcepts) : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50">
-                <span className="text-muted-foreground flex items-center gap-1.5">
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 gap-2">
+                <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <Globe className="size-3.5" /> Total Translations
                 </span>
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-foreground truncate">
                   {totalTranslations !== null ? formatNumber(totalTranslations) : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs py-1.5">
-                <span className="text-muted-foreground flex items-center gap-1.5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs py-1.5 gap-1 sm:gap-2">
+                <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <ShieldCheck className="size-3.5" /> Supported Languages
                 </span>
                 <span className="font-semibold text-foreground">Koch, Bangla, English</span>
