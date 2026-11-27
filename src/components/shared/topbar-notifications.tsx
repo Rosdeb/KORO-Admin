@@ -30,14 +30,16 @@ export function TopbarNotifications() {
   const pendingSubmissionsQuery = useQuery({
     queryKey: ["submissions", "pending", "topbar"],
     queryFn: () => submissionsApi.listPending({ page: 0, size: 6 }),
-    refetchInterval: 30000, // Auto-poll every 30 seconds
+    refetchInterval: 120000, // Check every 2 minutes
+    refetchIntervalInBackground: false,
   });
 
   // Query pending contact messages
   const pendingMessagesQuery = useQuery({
     queryKey: ["contact-messages", "pending", "topbar"],
     queryFn: () => contactMessagesApi.list({ page: 0, size: 6, status: "PENDING" }),
-    refetchInterval: 30000,
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
   });
 
   const pendingSubmissionsCount = pendingSubmissionsQuery.data?.totalElements ?? 0;

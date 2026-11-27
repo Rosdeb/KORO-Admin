@@ -1,5 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { tokenStorage } from "@/lib/token-storage";
+import { tokenStorage, isTokenExpiringSoon } from "@/lib/token-storage";
 import { authStorage } from "@/lib/auth-storage";
 import type { ApiErrorBody, TokenRefreshResponse } from "@/types/api";
 
@@ -22,20 +22,21 @@ export const httpClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-httpClient.interceptors.request.use((config) => {
-  const token = tokenStorage.getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 let refreshPromise: Promise<string | null> | null = null;
+let lastRefreshTime = 0;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
+  const now = Date.now();
+  // Cooldown: Avoid hammering the refresh endpoint multiple times within 10 seconds
+  if (now - lastRefreshTime < 10_000) {
+    return tokenStorage.getAccessToken();
+  }
+
   const refreshToken = tokenStorage.getRefreshToken();
   if (!refreshToken) return null;
+
   try {
+    lastRefreshTime = now;
     const res = await axios.post<TokenRefreshResponse>(
       `${API_BASE_URL}/api/v1/auth/refresh`,
       { refreshToken },
@@ -49,6 +50,27 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// Proactive refresh before outgoing requests: only refresh if the access token will expire within 1 minute
+httpClient.interceptors.request.use(async (config) => {
+  let token = tokenStorage.getAccessToken();
+  if (token) {
+    // Only refresh if token will expire in less than 60 seconds (1 minute)
+    if (isTokenExpiringSoon(token, 60_000)) {
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+      }
+      const refreshed = await refreshPromise;
+      if (refreshed) {
+        token = refreshed;
+      }
+    }
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 function clearSessionAndRedirect() {
   tokenStorage.clear();
   authStorage.clear();
@@ -57,6 +79,7 @@ function clearSessionAndRedirect() {
   }
 }
 
+// Response interceptor: handles unexpected 401s
 httpClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorBody>) => {
@@ -65,17 +88,24 @@ httpClient.interceptors.response.use(
 
     const isAuthEndpoint = original?.url?.includes("/api/v1/auth/");
 
+    // Only attempt refresh on 401 if not an auth endpoint, not already retried,
+    // and the token is actually expiring or expired
     if (status === 401 && original && !original._retried && !isAuthEndpoint) {
       original._retried = true;
-      if (!refreshPromise) {
-        refreshPromise = refreshAccessToken().finally(() => {
-          refreshPromise = null;
-        });
-      }
-      const newToken = await refreshPromise;
-      if (newToken) {
-        original.headers.Authorization = `Bearer ${newToken}`;
-        return httpClient(original);
+      const currentToken = tokenStorage.getAccessToken();
+
+      // Only call refresh if token is actually expiring or expired
+      if (isTokenExpiringSoon(currentToken, 60_000)) {
+        if (!refreshPromise) {
+          refreshPromise = refreshAccessToken().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        const newToken = await refreshPromise;
+        if (newToken) {
+          original.headers.Authorization = `Bearer ${newToken}`;
+          return httpClient(original);
+        }
       }
       clearSessionAndRedirect();
     }
