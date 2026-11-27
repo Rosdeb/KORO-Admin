@@ -179,17 +179,6 @@ export function DictionaryExportPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-border bg-muted/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-foreground">Streaming Architecture</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                The export endpoint streams CSV data in real-time batches directly from PostgreSQL / MongoDB to minimize memory consumption and support massive dictionary datasets smoothly.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
