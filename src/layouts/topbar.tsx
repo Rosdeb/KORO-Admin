@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Bell, Palette, Check, Paintbrush } from "lucide-react";
+import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Palette, Check, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorTheme } from "@/hooks/use-color-theme";
 import { CustomThemeDialog } from "@/components/shared/custom-theme-dialog";
+import { TopbarNotifications } from "@/components/shared/topbar-notifications";
 import { cn, initials } from "@/lib/utils";
 
 export function Topbar() {
@@ -142,16 +143,8 @@ export function Topbar() {
           {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </Button>
 
-        {/* Notifications placeholder */}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Notifications"
-          className="size-8 text-muted-foreground hover:text-foreground"
-          disabled
-        >
-          <Bell className="size-4" />
-        </Button>
+        {/* Real-time Notifications Popover */}
+        <TopbarNotifications />
 
         {/* Divider */}
         <div className="mx-1 h-5 w-px bg-border" />
