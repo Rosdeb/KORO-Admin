@@ -1,11 +1,12 @@
 import { getAdminPreferences } from "@/lib/admin-preferences";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Database } from "lucide-react";
+import { Plus, Pencil, Trash2, Database, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SearchInput } from "@/components/shared/search-input";
@@ -215,6 +216,18 @@ export function TranslationsPage() {
               }}
               isRefreshing={translationsQuery.isFetching || conceptsQuery.isFetching || languagesQuery.isFetching}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="gap-1.5"
+              title="Export complete dictionary in CSV format"
+            >
+              <Link to="/content/export">
+                <Download className="size-3.5" />
+                Export CSV
+              </Link>
+            </Button>
             {canManage && (
               <Button
                 variant="outline"

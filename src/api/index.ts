@@ -12,3 +12,4 @@ export * from "./leaderboard";
 export * from "./contact-messages";
 export * from "./platform-config";
 export * from "./ai-cache";
+export * from "./dictionary";

@@ -24,6 +24,9 @@ const LanguagesPage = lazy(() => import("@/pages/content/languages-page").then((
 const CategoriesPage = lazy(() => import("@/pages/content/categories-page").then((m) => ({ default: m.CategoriesPage })));
 const ConceptsPage = lazy(() => import("@/pages/content/concepts-page").then((m) => ({ default: m.ConceptsPage })));
 const TranslationsPage = lazy(() => import("@/pages/content/translations-page").then((m) => ({ default: m.TranslationsPage })));
+const DictionaryExportPage = lazy(() =>
+  import("@/pages/content/dictionary-export-page").then((m) => ({ default: m.DictionaryExportPage })),
+);
 const SubmissionsQueuePage = lazy(() =>
   import("@/pages/submissions/submissions-queue-page").then((m) => ({ default: m.SubmissionsQueuePage })),
 );
@@ -101,6 +104,7 @@ export default function App() {
                       <Route path="content/languages" element={<LanguagesPage />} />
                       <Route path="content/concepts" element={<ConceptsPage />} />
                       <Route path="content/translations" element={<TranslationsPage />} />
+                      <Route path="content/export" element={<DictionaryExportPage />} />
                       <Route path="contact-messages" element={<ContactMessagesPage />} />
                     </Route>
 

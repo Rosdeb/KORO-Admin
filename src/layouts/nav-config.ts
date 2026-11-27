@@ -17,6 +17,7 @@ import {
   Settings,
   Bot,
   Sparkles,
+  FileDown,
 } from "lucide-react";
 import type { Role } from "@/types/api";
 
@@ -56,6 +57,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Categories", to: "/content/categories", icon: FolderTree, roles: ADMIN },
       { label: "Concepts", to: "/content/concepts", icon: BookOpen, roles: ADMIN_MODERATOR },
       { label: "Translations", to: "/content/translations", icon: Type, roles: ADMIN_MODERATOR },
+      { label: "Dictionary Export", to: "/content/export", icon: FileDown, roles: ADMIN_MODERATOR },
     ],
   },
   {
