@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Globe2, LogOut, Loader2, ChevronRight } from "lucide-react";
 import { NAV_SECTIONS } from "./nav-config";
 import { useAuth } from "@/hooks/use-auth";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/types/api";
 
@@ -26,6 +27,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -128,7 +130,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={() => setLogoutDialogOpen(true)}
             disabled={signingOut}
             aria-label={signingOut ? "Signing out" : "Sign out"}
             className="ml-auto flex shrink-0 size-7 items-center justify-center rounded-md text-sidebar-muted outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-[var(--sidebar-active-bg)]/50 disabled:cursor-wait disabled:opacity-40"
@@ -141,6 +143,16 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        title="Sign out of your account?"
+        description="Are you sure you want to sign out? You will need to sign in again to access the admin dashboard."
+        confirmLabel="Sign out"
+        variant="destructive"
+        onConfirm={handleSignOut}
+      />
     </div>
   );
 }

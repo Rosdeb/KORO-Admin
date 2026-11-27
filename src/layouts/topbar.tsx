@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Menu, Moon, Sun, LogOut, User as UserIcon, Settings, Palette, Check, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorTheme } from "@/hooks/use-color-theme";
 import { CustomThemeDialog } from "@/components/shared/custom-theme-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TopbarNotifications } from "@/components/shared/topbar-notifications";
 import { cn, initials } from "@/lib/utils";
 
@@ -26,11 +28,15 @@ export function Topbar() {
   const { theme, toggleTheme } = useTheme();
   const { themeId, setColorTheme, themes, currentTheme } = useColorTheme();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   async function handleLogout() {
+    await queryClient.cancelQueries();
     await logout();
+    queryClient.clear();
     navigate("/login", { replace: true });
   }
 
@@ -187,12 +193,25 @@ export function Topbar() {
               Account settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem
+              onSelect={() => setLogoutDialogOpen(true)}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+            >
               <LogOut className="size-4" />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <ConfirmDialog
+          open={logoutDialogOpen}
+          onOpenChange={setLogoutDialogOpen}
+          title="Sign out of your account?"
+          description="Are you sure you want to sign out? You will need to sign in again to access the admin dashboard."
+          confirmLabel="Sign out"
+          variant="destructive"
+          onConfirm={handleLogout}
+        />
       </div>
     </header>
   );
