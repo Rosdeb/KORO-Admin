@@ -87,9 +87,9 @@ httpClient.interceptors.response.use(
     const status = error.response?.status;
 
     const isAuthEndpoint = original?.url?.includes("/api/v1/auth/");
+    const isExportEndpoint = original?.url?.includes("/api/v1/admin/dictionary/export");
 
-    // Only attempt refresh on 401 if not an auth endpoint, not already retried,
-    // and the token is actually expiring or expired
+    // Only attempt refresh on 401 if not an auth endpoint, not already retried
     if (status === 401 && original && !original._retried && !isAuthEndpoint) {
       original._retried = true;
       const currentToken = tokenStorage.getAccessToken();
@@ -107,7 +107,11 @@ httpClient.interceptors.response.use(
           return httpClient(original);
         }
       }
-      clearSessionAndRedirect();
+
+      // Do NOT kick the user out of the dashboard or crash the session for export or non-critical failures!
+      if (!isExportEndpoint) {
+        clearSessionAndRedirect();
+      }
     }
 
     let message = error.message || "Something went wrong. Please try again.";
