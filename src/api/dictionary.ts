@@ -1,8 +1,23 @@
 import { httpClient } from "./client";
 
+export interface DictionaryExportOptions {
+  format?: string;
+  categoryId?: string;
+  languageIds?: string[];
+}
+
 export const dictionaryApi = {
-  exportCsv: async (): Promise<{ blob: Blob; filename: string }> => {
-    const response = await httpClient.get<Blob>("/api/v1/admin/dictionary/export?format=csv", {
+  exportCsv: async (options?: DictionaryExportOptions): Promise<{ blob: Blob; filename: string }> => {
+    const params = new URLSearchParams();
+    params.set("format", options?.format ?? "csv");
+    if (options?.categoryId && options.categoryId !== "ALL") {
+      params.set("categoryId", options.categoryId);
+    }
+    if (options?.languageIds && options.languageIds.length > 0) {
+      params.set("languageIds", options.languageIds.join(","));
+    }
+
+    const response = await httpClient.get<Blob>(`/api/v1/admin/dictionary/export?${params.toString()}`, {
       responseType: "blob",
     });
 
@@ -17,8 +32,8 @@ export const dictionaryApi = {
   },
 };
 
-export async function downloadDictionaryExport(): Promise<string> {
-  const { blob, filename } = await dictionaryApi.exportCsv();
+export async function downloadDictionaryExport(options?: DictionaryExportOptions): Promise<string> {
+  const { blob, filename } = await dictionaryApi.exportCsv(options);
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
