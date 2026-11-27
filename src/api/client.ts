@@ -80,8 +80,20 @@ httpClient.interceptors.response.use(
       clearSessionAndRedirect();
     }
 
+    let message = error.message || "Something went wrong. Please try again.";
     const body = error.response?.data;
-    const message = body?.message || error.message || "Something went wrong. Please try again.";
-    return Promise.reject(new ApiError(message, status ?? 0, body));
+    if (body instanceof Blob && body.type?.includes("json")) {
+      try {
+        const text = await body.text();
+        const json = JSON.parse(text);
+        if (json.message) message = json.message;
+      } catch {
+        // ignore
+      }
+    } else if (body && typeof body === "object" && "message" in body) {
+      const candidate = (body as ApiErrorBody).message;
+      if (candidate) message = candidate;
+    }
+    return Promise.reject(new ApiError(message, status ?? 0, body as ApiErrorBody | undefined));
   },
 );

@@ -1,4 +1,5 @@
 import { httpClient } from "./client";
+import { tokenStorage } from "@/lib/token-storage";
 
 export interface DictionaryExportOptions {
   format?: string;
@@ -17,9 +18,30 @@ export const dictionaryApi = {
       params.set("languageIds", options.languageIds.join(","));
     }
 
+    const token = tokenStorage.getAccessToken();
+    if (token) {
+      params.set("token", token);
+    }
+
     const response = await httpClient.get<Blob>(`/api/v1/admin/dictionary/export?${params.toString()}`, {
       responseType: "blob",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+
+    // Check if the response is actually an error payload returned as a Blob
+    if (response.data && response.data.type?.includes("json")) {
+      const text = await response.data.text();
+      try {
+        const json = JSON.parse(text);
+        if (json.error || (json.status && json.status >= 400)) {
+          throw new Error(json.message || json.error || "Export request was unauthorized or failed");
+        }
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+          throw e;
+        }
+      }
+    }
 
     const disposition = response.headers?.["content-disposition"] ?? "";
     let filename = `korot-dictionary-${new Date().toISOString().split("T")[0]}.csv`;
