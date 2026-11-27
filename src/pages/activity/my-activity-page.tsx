@@ -6,14 +6,12 @@ import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Pagination } from "@/components/shared/pagination";
-import { GitHubActivityCalendar } from "@/components/shared/github-activity-calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { activityApi, statisticsApi } from "@/api";
+import { activityApi } from "@/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { countByKey } from "@/lib/analytics";
@@ -72,11 +70,6 @@ export function MyActivityPage() {
         page: page - 1,
         size: pageSize,
       }),
-  });
-
-  const statsQuery = useQuery({
-    queryKey: queryKeys.activityStatistics,
-    queryFn: statisticsApi.activity,
   });
 
   const [search, setSearch] = useState("");
@@ -139,27 +132,13 @@ export function MyActivityPage() {
           <RefreshButton
             onRefresh={() => {
               void refetch();
-              void statsQuery.refetch();
             }}
-            isRefreshing={isFetching || statsQuery.isFetching}
+            isRefreshing={isFetching}
           />
         </div>
       </div>
 
-      {/* Clean Minimal Heatmap (uses existing page data safely) */}
-      <GitHubActivityCalendar
-        activities={data?.content ?? []}
-        isLoading={isLoading}
-        weeksToShow={22}
-        title="Recent Activity Pattern"
-        onSelectDate={(dateStr) => {
-          if (dateStr) {
-            setSearch(dateStr);
-          }
-        }}
-      />
-
-      {/* Minimal Inline Filter Row (No bulky card wrapper) */}
+      {/* Minimal Inline Filter Row */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
         <div className="flex items-center gap-2 flex-1 max-w-sm">
           <SearchInput
@@ -174,7 +153,7 @@ export function MyActivityPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Activity Type Dropdown (cleaner than rows of pills) */}
+          {/* Activity Type Dropdown */}
           {byType.length > 0 && (
             <Select
               value={selectedType ?? "ALL"}
@@ -239,106 +218,104 @@ export function MyActivityPage() {
         </div>
       </div>
 
-      {/* Main Activity Table Card */}
-      <Card className="overflow-hidden border-border/80 shadow-sm">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full rounded-md" />
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-8">
-              <EmptyState
-                title="No activity found"
-                description={
-                  hasFilters
-                    ? "Try clearing or widening your filters."
-                    : "Actions you take on the platform will be logged here."
-                }
+      {/* Flat Minimal Table Container (No outside card design) */}
+      <div className="overflow-hidden rounded-lg border border-border">
+        {isLoading ? (
+          <div className="space-y-2 p-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-md" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8">
+            <EmptyState
+              title="No activity found"
+              description={
+                hasFilters
+                  ? "Try clearing or widening your filters."
+                  : "Actions you take on the platform will be logged here."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="w-[170px] text-xs">Type</TableHead>
+                  <TableHead className="text-xs">Description</TableHead>
+                  <TableHead className="w-[160px] text-xs">Device</TableHead>
+                  <TableHead className="w-[130px] text-xs">IP Address</TableHead>
+                  <TableHead className="w-[170px] text-right text-xs">When</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((log) => {
+                  const deviceMeta = parseDevice(log.device);
+                  const DeviceIcon = deviceMeta.icon;
+
+                  return (
+                    <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] font-mono font-normal bg-muted/20 border-border"
+                        >
+                          {log.activityType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-foreground">
+                        {log.description ?? "—"}
+                      </TableCell>
+
+                      {/* Device Info */}
+                      <TableCell className="text-muted-foreground text-xs">
+                        <div
+                          className="inline-flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded text-[11px] max-w-[150px] truncate"
+                          title={log.device ?? "Unknown"}
+                        >
+                          <DeviceIcon className="size-3 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{deviceMeta.name}</span>
+                        </div>
+                      </TableCell>
+
+                      {/* IP Address */}
+                      <TableCell className="text-muted-foreground text-xs font-mono">
+                        <div className="flex items-center gap-1.5 text-[11px]">
+                          <Globe className="size-3 text-muted-foreground/70" />
+                          <span>
+                            {log.ipAddress === "0:0:0:0:0:0:0:1"
+                              ? "localhost"
+                              : log.ipAddress ?? "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* When */}
+                      <TableCell className="text-muted-foreground text-xs text-right whitespace-nowrap">
+                        {formatDateTime(log.createdAt)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            <div className="border-t border-border p-3 bg-muted/10">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={data?.totalElements ?? 0}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
               />
             </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead className="w-[170px] text-xs">Type</TableHead>
-                    <TableHead className="text-xs">Description</TableHead>
-                    <TableHead className="w-[160px] text-xs">Device</TableHead>
-                    <TableHead className="w-[130px] text-xs">IP Address</TableHead>
-                    <TableHead className="w-[170px] text-right text-xs">When</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((log) => {
-                    const deviceMeta = parseDevice(log.device);
-                    const DeviceIcon = deviceMeta.icon;
-
-                    return (
-                      <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="text-[11px] font-mono font-normal bg-muted/20 border-border"
-                          >
-                            {log.activityType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs font-medium text-foreground">
-                          {log.description ?? "—"}
-                        </TableCell>
-
-                        {/* Device Info */}
-                        <TableCell className="text-muted-foreground text-xs">
-                          <div
-                            className="inline-flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded text-[11px] max-w-[150px] truncate"
-                            title={log.device ?? "Unknown"}
-                          >
-                            <DeviceIcon className="size-3 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{deviceMeta.name}</span>
-                          </div>
-                        </TableCell>
-
-                        {/* IP Address */}
-                        <TableCell className="text-muted-foreground text-xs font-mono">
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <Globe className="size-3 text-muted-foreground/70" />
-                            <span>
-                              {log.ipAddress === "0:0:0:0:0:0:0:1"
-                                ? "localhost"
-                                : log.ipAddress ?? "—"}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        {/* When */}
-                        <TableCell className="text-muted-foreground text-xs text-right whitespace-nowrap">
-                          {formatDateTime(log.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-
-              <div className="border-t border-border/60 p-3 bg-muted/10">
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  total={data?.totalElements ?? 0}
-                  onPageChange={setPage}
-                  onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setPage(1);
-                  }}
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </div>
     </div>
   );
 }
