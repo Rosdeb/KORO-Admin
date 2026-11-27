@@ -1,12 +1,10 @@
 import * as React from "react";
 import {
-  Calendar as CalendarIcon,
   Flame,
   Trophy,
   CheckCircle2,
   TrendingUp,
   X,
-  Clock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, parseDate } from "@/lib/utils";
@@ -60,14 +58,14 @@ interface MonthLabel {
   col: number;
 }
 
-// GitHub calendar geometry
+// GitHub calendar geometry matching authentic GitHub layout
 const CELL_SIZE = 10;
 const CELL_GAP = 3;
 const DISTANCE = CELL_SIZE + CELL_GAP; // 13px
-const MARGIN_LEFT = 30;
+const MARGIN_LEFT = 32;
 const MARGIN_TOP = 20;
 const TOTAL_WEEKS = 53;
-const SVG_WIDTH = MARGIN_LEFT + TOTAL_WEEKS * DISTANCE + 6; // 725px
+const SVG_WIDTH = MARGIN_LEFT + TOTAL_WEEKS * DISTANCE + 6; // 727px
 const SVG_HEIGHT = MARGIN_TOP + 7 * DISTANCE + 6; // 117px
 
 // Authentic GitHub Contribution Colors
@@ -82,11 +80,11 @@ const GITHUB_LEVEL_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
 };
 
 const LEGEND_LEVEL_STYLES: Record<0 | 1 | 2 | 3 | 4, string> = {
-  0: "bg-[#ebedf0] dark:bg-[#161b22] border-[rgba(27,31,35,0.06)] dark:border-[rgba(255,255,255,0.05)]",
-  1: "bg-[#9be9a8] dark:bg-[#0e4429] border-transparent",
-  2: "bg-[#40c463] dark:bg-[#006d32] border-transparent",
-  3: "bg-[#30a14e] dark:bg-[#26a641] border-transparent",
-  4: "bg-[#216e39] dark:bg-[#39d353] border-transparent",
+  0: "bg-[#ebedf0] dark:bg-[#161b22] border border-[rgba(27,31,35,0.06)] dark:border-[rgba(255,255,255,0.05)]",
+  1: "bg-[#9be9a8] dark:bg-[#0e4429] border border-transparent",
+  2: "bg-[#40c463] dark:bg-[#006d32] border border-transparent",
+  3: "bg-[#30a14e] dark:bg-[#26a641] border border-transparent",
+  4: "bg-[#216e39] dark:bg-[#39d353] border border-transparent",
 };
 
 function getColorLevel(count: number, maxCount: number): 0 | 1 | 2 | 3 | 4 {
@@ -112,8 +110,6 @@ export function GitHubActivityCalendar({
   isLoading = false,
   selectedDate = null,
   onSelectDate,
-  title = "Activity Overview",
-  subtitle = "Activity audit tracked in Asia/Dhaka time (UTC+06:00)",
   className,
 }: GitHubActivityCalendarProps) {
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -191,7 +187,7 @@ export function GitHubActivityCalendar({
     return days;
   }, [endDate, weeksCount, dayCounts]);
 
-  // 4. Month labels
+  // 4. Month labels positioned above week columns
   const monthLabels = React.useMemo(() => {
     const labels: MonthLabel[] = [];
     let lastMonth = -1;
@@ -252,6 +248,7 @@ export function GitHubActivityCalendar({
     }
   }, [selectedYear]);
 
+  // GitHub standard weekday labels: Mon (row 1), Wed (row 3), Fri (row 5)
   const weekdayLabels = [
     { row: 1, label: "Mon" },
     { row: 3, label: "Wed" },
@@ -265,11 +262,11 @@ export function GitHubActivityCalendar({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* 4 Key Stat Badges */}
+      {/* 4 Cards Positioned Above the Chart (Retain borders and styling) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           {
-            label: "Total Recorded",
+            label: "Total Contributions",
             value: displayTotal.toLocaleString(),
             icon: TrendingUp,
             iconClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
@@ -308,32 +305,22 @@ export function GitHubActivityCalendar({
         ))}
       </div>
 
-      {/* GitHub-style Contribution Card */}
-      <div className="rounded-lg border border-border bg-card p-4 sm:p-5 shadow-xs">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-border/50">
-          <div>
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                {title} &bull;{" "}
-                <span className="font-normal text-muted-foreground">
-                  {displayTotal} actions in the last year
-                </span>
-              </h2>
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
-          </div>
+      {/* GitHub Contribution Heatmap (NO OUTER BORDER around chart, exactly matching screenshot) */}
+      <div className="rounded-lg bg-card/40 dark:bg-[#0d1117] p-4 sm:p-5">
+        {/* Optional year selector positioned cleanly top-right if needed */}
+        <div className="flex items-center justify-between pb-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {displayTotal.toLocaleString()} contributions in the last year
+          </span>
 
-          {/* Year selector pills */}
-          <div className="flex items-center gap-1 self-start sm:self-auto rounded-md bg-muted/60 p-1 text-xs">
+          <div className="flex items-center gap-1 rounded bg-muted/40 p-0.5 text-xs">
             <button
               type="button"
               onClick={() => setSelectedYear("lastYear")}
               className={cn(
-                "rounded px-2.5 py-0.5 font-medium transition-colors text-[11px]",
+                "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
                 selectedYear === "lastYear"
-                  ? "bg-card text-foreground shadow-xs border border-border/60"
+                  ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -345,9 +332,9 @@ export function GitHubActivityCalendar({
                 type="button"
                 onClick={() => setSelectedYear(year)}
                 className={cn(
-                  "rounded px-2.5 py-0.5 font-medium transition-colors text-[11px]",
+                  "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
                   selectedYear === year
-                    ? "bg-card text-foreground shadow-xs border border-border/60"
+                    ? "bg-card text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -358,7 +345,7 @@ export function GitHubActivityCalendar({
         </div>
 
         {/* Heatmap Grid SVG */}
-        <div className="relative pt-3">
+        <div className="relative">
           {isLoading ? (
             <Skeleton className="h-[120px] w-full rounded-md" />
           ) : (
@@ -369,7 +356,7 @@ export function GitHubActivityCalendar({
               <svg
                 viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
                 className="w-full min-w-[725px] max-w-full overflow-visible font-sans"
-                style={{ maxHeight: 140 }}
+                style={{ maxHeight: 135 }}
               >
                 {/* Month Labels */}
                 {monthLabels.map((lbl, idx) => (
@@ -377,7 +364,7 @@ export function GitHubActivityCalendar({
                     key={`${lbl.name}-${idx}`}
                     x={MARGIN_LEFT + lbl.col * DISTANCE}
                     y={12}
-                    className="fill-muted-foreground text-[10px] font-normal"
+                    className="fill-[#7d8590] text-[10px] font-normal"
                   >
                     {lbl.name}
                   </text>
@@ -387,10 +374,10 @@ export function GitHubActivityCalendar({
                 {weekdayLabels.map((item) => (
                   <text
                     key={item.label}
-                    x={MARGIN_LEFT - 6}
+                    x={MARGIN_LEFT - 7}
                     y={MARGIN_TOP + item.row * DISTANCE + 8.5}
                     textAnchor="end"
-                    className="fill-muted-foreground text-[9px] font-normal"
+                    className="fill-[#7d8590] text-[9px] font-normal"
                   >
                     {item.label}
                   </text>
@@ -446,8 +433,8 @@ export function GitHubActivityCalendar({
                 <p className="font-normal whitespace-nowrap">
                   <span className="font-semibold">
                     {hoveredDay.day.count === 0
-                      ? "No activity"
-                      : `${hoveredDay.day.count} ${hoveredDay.day.count === 1 ? "activity" : "activities"}`}
+                      ? "No contributions"
+                      : `${hoveredDay.day.count} ${hoveredDay.day.count === 1 ? "contribution" : "contributions"}`}
                   </span>{" "}
                   on{" "}
                   {hoveredDay.day.date.toLocaleDateString("en-US", {
@@ -464,13 +451,12 @@ export function GitHubActivityCalendar({
           )}
         </div>
 
-        {/* Footer: Timezone, Filter Active & Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs border-t border-border/50">
+        {/* Footer: "Learn how we count contributions" on left, "Less [][][][][] More" on right */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 text-xs">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
-              <Clock className="size-3" />
-              <span>Asia/Dhaka (UTC+06:00)</span>
-            </div>
+            <span className="text-[#7d8590] text-[11px] hover:underline cursor-pointer">
+              Learn how we count contributions
+            </span>
 
             {selectedDate && (
               <button
@@ -484,14 +470,14 @@ export function GitHubActivityCalendar({
             )}
           </div>
 
-          {/* GitHub Less ... More Legend */}
-          <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+          {/* GitHub Authentic Less ... More Legend */}
+          <div className="flex items-center gap-1.5 text-[#7d8590] text-[11px]">
             <span>Less</span>
             <div className="flex items-center gap-1">
               {([0, 1, 2, 3, 4] as const).map((lvl) => (
                 <span
                   key={lvl}
-                  className={cn("size-2.5 rounded-xs border", LEGEND_LEVEL_STYLES[lvl])}
+                  className={cn("size-2.5 rounded-[2px]", LEGEND_LEVEL_STYLES[lvl])}
                 />
               ))}
             </div>
