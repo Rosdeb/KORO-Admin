@@ -105,7 +105,7 @@ export function UsersListPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="All Users"
+        title=""
         description={data ? `${formatNumber(data.length)} registered accounts` : "Loading…"}
         actions={
           <>

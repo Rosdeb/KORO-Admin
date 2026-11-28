@@ -21,18 +21,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { getAdminPreferences, setAdminPreferences, resetAdminPreferences, useAdminPreferences, START_PAGES } from "@/lib/admin-preferences";
 
 function SectionTitle({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) {
-  return <CardHeader className="flex-row items-start gap-3 p-4">
+  return <CardHeader className="flex-row items-start gap-3 p-4 sm:p-5 pb-2 sm:pb-3 shrink-0 min-h-[76px]">
     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="size-4" /></span>
     <div className="space-y-1"><CardTitle className="leading-snug">{title}</CardTitle><CardDescription className="text-xs">{description}</CardDescription></div>
   </CardHeader>;
 }
 function SettingRow({ id, title, description, children }: { id?: string; title: string; description: string; children: ReactNode }) {
-  return <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
-    <div className="min-w-0 flex-1"><Label htmlFor={id}>{title}</Label><p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p></div>
+  return <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-3 rounded-xl bg-muted/20 hover:bg-muted/30 transition-colors shadow-2xs">
+    <div className="min-w-0 flex-1"><Label htmlFor={id} className="text-xs font-semibold text-foreground cursor-pointer">{title}</Label><p className="mt-0.5 text-xs text-muted-foreground leading-normal">{description}</p></div>
     <div className="shrink-0">{children}</div>
   </div>;
 }
-const selectStyle = "h-8 max-w-full rounded-md border border-input bg-card px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const selectStyle = "h-8 max-w-full rounded-md border border-input bg-background px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-xs";
 
 export function SettingsPage() {
   const { preference, setTheme } = useTheme();
@@ -82,18 +82,38 @@ export function SettingsPage() {
   }
 
   return <div className="space-y-4">
-    <PageHeader title="Settings" description="Set up your workspace and manage your admin session." actions={<span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="size-3.5 text-primary" />Preferences save automatically</span>} />
-    <div className="grid items-start gap-4 xl:grid-cols-2">
-      <div className="space-y-4">
-        <Card>
-          <SectionTitle icon={Palette} title="Appearance" description="Make the workspace comfortable to use." />
-          <CardContent className="space-y-3">
-            <fieldset><legend className="mb-2 text-xs font-medium">Theme</legend><div className="grid grid-cols-3 gap-2">
-              {([{ value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }, { value: "system", label: "System", icon: Monitor }] as const).map((option) => <button key={option.value} type="button" aria-pressed={preference === option.value} onClick={() => setTheme(option.value)} className={`flex items-center justify-center gap-2 rounded-lg border px-2 py-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${preference === option.value ? "border-primary/50 bg-primary/5 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted/40"}`}><option.icon className="size-4" />{option.label}</button>)}
-            </div><p className="mt-2 text-xs text-muted-foreground">System follows your device’s appearance.</p></fieldset>
+    <PageHeader title="" description="Set up your workspace and manage your admin session." actions={<span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="size-3.5 text-primary" />Preferences save automatically</span>} />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
+      {/* 1. Appearance Card */}
+      <Card className="flex flex-col h-full border-0 shadow-sm bg-card">
+        <SectionTitle icon={Palette} title="Appearance" description="Make the workspace comfortable to use." />
+        <CardContent className="flex flex-col flex-1 justify-between p-4 sm:p-5 pt-0 space-y-4">
+          <div className="space-y-4 flex-1">
+            <fieldset>
+              <legend className="mb-2 text-xs font-medium">Theme</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {([{ value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }, { value: "system", label: "System", icon: Monitor }] as const).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={preference === option.value}
+                    onClick={() => setTheme(option.value)}
+                    className={`flex items-center justify-center gap-2 rounded-xl border-0 px-2 py-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                      preference === option.value
+                        ? "bg-primary/10 text-primary ring-2 ring-primary/20 shadow-xs"
+                        : "bg-muted/30 shadow-2xs text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <option.icon className="size-4" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">System follows your device’s appearance.</p>
+            </fieldset>
 
-            <div className="border-t border-border pt-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <legend className="text-xs font-medium">Sidebar & Accent Palettes ({themes.length} Combos)</legend>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline">
@@ -104,27 +124,24 @@ export function SettingsPage() {
                     size="sm"
                     type="button"
                     onClick={() => setCustomDialogOpen(true)}
-                    className="h-7 text-xs gap-1.5 cursor-pointer"
+                    className="h-7 text-xs gap-1.5 cursor-pointer border border-input shadow-xs"
                   >
                     <Paintbrush className="size-3 text-primary" />
                     <span>Create Custom</span>
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Choose a coordinated color combination, or create your own custom palette saved directly in your browser cookies.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
                 {themes.map((t) => {
                   const isActive = themeId === t.id;
                   return (
                     <div
                       key={t.id}
                       onClick={() => setColorTheme(t.id)}
-                      className={`group relative flex items-start justify-between gap-2.5 rounded-lg border p-2.5 text-left text-xs transition-all outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`group relative flex items-start justify-between gap-2.5 rounded-xl border-0 p-2.5 text-left text-xs transition-all outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring ${
                         isActive
-                          ? "border-primary bg-primary/5 shadow-xs"
-                          : "border-border bg-card hover:bg-muted/30"
+                          ? "bg-primary/10 shadow-xs ring-2 ring-primary/20"
+                          : "bg-muted/30 shadow-2xs hover:bg-muted/50"
                       }`}
                     >
                       <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -174,39 +191,104 @@ export function SettingsPage() {
                 })}
               </div>
             </div>
-            <div className="divide-y divide-border border-t border-border">
-              <SettingRow id="compact-tables" title="Compact tables" description="Use tighter rows to fit more information on screen."><Switch id="compact-tables" checked={preferences.compactTables} onCheckedChange={(compactTables) => setAdminPreferences({ compactTables })} /></SettingRow>
-              <SettingRow id="reduced-motion" title="Reduce motion" description="Minimize animations and transitions in the admin panel."><Switch id="reduced-motion" checked={preferences.reducedMotion} onCheckedChange={(reducedMotion) => setAdminPreferences({ reducedMotion })} /></SettingRow>
+          </div>
+
+          <div className="space-y-2 pt-2 mt-auto">
+            <SettingRow id="compact-tables" title="Compact tables" description="Use tighter rows to fit more information on screen.">
+              <Switch id="compact-tables" checked={preferences.compactTables} onCheckedChange={(compactTables) => setAdminPreferences({ compactTables })} />
+            </SettingRow>
+            <SettingRow id="reduced-motion" title="Reduce motion" description="Minimize animations and transitions in the admin panel.">
+              <Switch id="reduced-motion" checked={preferences.reducedMotion} onCheckedChange={(reducedMotion) => setAdminPreferences({ reducedMotion })} />
+            </SettingRow>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2. Data & preferences Card */}
+      <Card className="flex flex-col h-full border-0 shadow-sm bg-card">
+        <SectionTitle icon={SlidersHorizontal} title="Data & preferences" description="Refresh your workspace or keep a copy of your preferences." />
+        <CardContent className="flex flex-col flex-1 justify-between p-4 sm:p-5 pt-0 space-y-3">
+          <div className="space-y-2.5 flex-1">
+            <SettingRow title="AI & search limits" description="Manage multi-model failover roster and search rate limits.">
+              <Button variant="outline" size="sm" asChild className="border border-input shadow-xs">
+                <Link to="/administration/ai-limits">Configure <ExternalLink className="size-3.5 ml-1" /></Link>
+              </Button>
+            </SettingRow>
+            <SettingRow title="Refresh admin data" description="Reload open views and refresh other pages when you visit them.">
+              <Button variant="outline" size="sm" onClick={refreshData} disabled={refreshing} className="border border-input shadow-xs">
+                <RefreshCw className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
+                {refreshing ? "Refreshing…" : "Refresh"}
+              </Button>
+            </SettingRow>
+            <SettingRow title="Export preferences" description="Download your browser preferences as a JSON file.">
+              <Button variant="outline" size="sm" onClick={exportPreferences} className="border border-input shadow-xs">
+                <Download />Export
+              </Button>
+            </SettingRow>
+            <SettingRow title="Restore defaults" description="Reset appearance and workspace preferences.">
+              <Button variant="ghost" size="sm" onClick={() => setDialog("reset")}>
+                <RotateCcw />Reset
+              </Button>
+            </SettingRow>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. Workspace defaults Card */}
+      <Card className="flex flex-col h-full border-0 shadow-sm bg-card">
+        <SectionTitle icon={Table2} title="Workspace defaults" description="Spend less time adjusting your daily views." />
+        <CardContent className="flex flex-col flex-1 justify-start p-4 sm:p-5 pt-0 space-y-2.5">
+          <SettingRow id="default-page-size" title="Rows per page" description="Applied when you open paginated lists.">
+            <select id="default-page-size" className={selectStyle} value={preferences.pageSize ?? "default"} onChange={(event) => setAdminPreferences({ pageSize: event.target.value === "default" ? null : Number(event.target.value) })}>
+              <option value="default">Page default</option>
+              {[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size} rows</option>)}
+            </select>
+          </SettingRow>
+          <SettingRow id="start-page" title="Landing page" description="Where you start after signing in or opening the admin home.">
+            <select id="start-page" className={selectStyle} value={preferences.startPage} onChange={(event) => setAdminPreferences({ startPage: event.target.value })}>
+              {START_PAGES.map((page) => <option key={page.value} value={page.value}>{page.label}</option>)}
+            </select>
+          </SettingRow>
+        </CardContent>
+      </Card>
+
+      {/* 4. Account & session Card */}
+      <Card className="flex flex-col h-full border-0 shadow-sm bg-card">
+        <SectionTitle icon={ShieldCheck} title="Account & session" description="Your current account and access level." />
+        <CardContent className="flex flex-col flex-1 justify-between p-4 sm:p-5 pt-0 space-y-3">
+          <div className="space-y-3 flex-1">
+            <div className="rounded-xl border-0 bg-muted/30 p-3.5 shadow-2xs">
+              <p className="break-words text-sm font-medium">{user?.name}</p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">{user?.email}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {user?.roles.map((role) => <Badge key={role} variant="outline" className="border border-input shadow-2xs">{ROLE_LABEL[role] ?? role}</Badge>)}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <SectionTitle icon={Table2} title="Workspace defaults" description="Spend less time adjusting your daily views." />
-          <CardContent className="divide-y divide-border">
-            <SettingRow id="default-page-size" title="Rows per page" description="Applied when you open paginated lists."><select id="default-page-size" className={selectStyle} value={preferences.pageSize ?? "default"} onChange={(event) => setAdminPreferences({ pageSize: event.target.value === "default" ? null : Number(event.target.value) })}><option value="default">Page default</option>{[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size} rows</option>)}</select></SettingRow>
-            <SettingRow id="start-page" title="Landing page" description="Where you start after signing in or opening the admin home."><select id="start-page" className={selectStyle} value={preferences.startPage} onChange={(event) => setAdminPreferences({ startPage: event.target.value })}>{START_PAGES.map((page) => <option key={page.value} value={page.value}>{page.label}</option>)}</select></SettingRow>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="space-y-4">
-        <Card>
-          <SectionTitle icon={SlidersHorizontal} title="Data & preferences" description="Refresh your workspace or keep a copy of your preferences." />
-          <CardContent className="divide-y divide-border">
-            <SettingRow title="AI & search limits" description="Manage multi-model failover roster and search rate limits."><Button variant="outline" size="sm" asChild><Link to="/administration/ai-limits">Configure <ExternalLink className="size-3.5 ml-1" /></Link></Button></SettingRow>
-            <SettingRow title="Refresh admin data" description="Reload open views and refresh other pages when you visit them."><Button variant="outline" size="sm" onClick={refreshData} disabled={refreshing}><RefreshCw className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />{refreshing ? "Refreshing…" : "Refresh"}</Button></SettingRow>
-            <SettingRow title="Export preferences" description="Download your browser preferences as a JSON file."><Button variant="outline" size="sm" onClick={exportPreferences}><Download />Export</Button></SettingRow>
-            <SettingRow title="Restore defaults" description="Reset appearance and workspace preferences."><Button variant="ghost" size="sm" onClick={() => setDialog("reset")}><RotateCcw />Reset</Button></SettingRow>
-          </CardContent>
-        </Card>
-        <Card>
-          <SectionTitle icon={ShieldCheck} title="Account & session" description="Your current account and access level." />
-          <CardContent className="space-y-3">
-            <div className="rounded-lg border border-border bg-muted/20 p-3"><p className="break-words text-sm font-medium">{user?.name}</p><p className="mt-1 break-all text-xs text-muted-foreground">{user?.email}</p><div className="mt-2 flex flex-wrap gap-1.5">{user?.roles.map((role) => <Badge key={role} variant="outline">{ROLE_LABEL[role] ?? role}</Badge>)}</div></div>
-            <div className="flex flex-wrap items-center justify-between gap-2"><Button variant="ghost" size="sm" asChild><Link to="/administration/roles-permissions">View permissions <ExternalLink /></Link></Button><Button variant="outline" size="sm" onClick={() => setDialog("logout")}><LogOut />Sign out</Button></div>
-            <details className="rounded-lg border border-border p-3 text-xs"><summary className="cursor-pointer font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">Connection details</summary><div className="mt-3 flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-muted-foreground">API address</p><code className="mt-1 block select-text break-all">{API_BASE_URL}</code></div><Button variant="ghost" size="icon" aria-label="Copy API address" onClick={copyApiUrl}><Copy /></Button></div></details>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/administration/roles-permissions">View permissions <ExternalLink /></Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDialog("logout")} className="border border-input shadow-xs">
+                <LogOut />Sign out
+              </Button>
+            </div>
+            <details className="rounded-xl border-0 bg-muted/30 p-3.5 text-xs shadow-2xs">
+              <summary className="cursor-pointer font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Connection details
+              </summary>
+              <div className="mt-3 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-muted-foreground">API address</p>
+                  <code className="mt-1 block select-text break-all">{API_BASE_URL}</code>
+                </div>
+                <Button variant="ghost" size="icon" aria-label="Copy API address" onClick={copyApiUrl}>
+                  <Copy />
+                </Button>
+              </div>
+            </details>
+          </div>
+        </CardContent>
+      </Card>
     </div>
     <p className="text-xs leading-5 text-muted-foreground">Preferences are saved in this browser and apply to your admin workspace.</p>
     <ConfirmDialog open={dialog !== null} onOpenChange={(open) => { if (!open) setDialog(null); }} title={dialog === "logout" ? "Sign out of this session?" : "Restore default preferences?"} description={dialog === "logout" ? "You’ll need to sign in again to access the admin panel." : "Your theme and workspace preferences will return to their defaults. Your account and platform data stay unchanged."} confirmLabel={dialog === "logout" ? "Sign out" : "Restore defaults"} onConfirm={confirmAction} />

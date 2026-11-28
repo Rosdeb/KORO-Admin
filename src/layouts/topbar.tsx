@@ -43,7 +43,7 @@ export function Topbar() {
   const userInitials = user ? initials(user.name) : "?";
 
   return (
-    <header className="sticky top-0 z-30 flex h-13 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 sm:px-6 lg:px-8 xl:px-10 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       {/* Mobile menu trigger */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetTrigger asChild>
@@ -51,18 +51,15 @@ export function Topbar() {
             <Menu className="size-4.5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[min(18rem,calc(100vw-2rem))] p-0">
+        <SheetContent side="left" className="w-[min(19rem,calc(100vw-2rem))] p-0">
           <SidebarContent onNavigate={() => setMenuOpen(false)} />
         </SheetContent>
       </Sheet>
 
-      {/* Breadcrumbs */}
-      <div className="hidden lg:flex min-w-0 flex-1 items-center">
+      {/* Breadcrumbs & Dynamic Page Title */}
+      <div className="flex min-w-0 flex-1 items-center">
         <Breadcrumbs />
       </div>
-
-      {/* Mobile title spacer */}
-      <div className="flex-1 lg:hidden" />
 
       {/* Right actions */}
       <div className="flex shrink-0 items-center gap-1">

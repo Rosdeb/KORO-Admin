@@ -102,7 +102,7 @@ export function CategoriesPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Categories"
+        title=""
         description="Groupings that organize concepts (e.g. Animals, Food, Greetings)."
         actions={
           <>

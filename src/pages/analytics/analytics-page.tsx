@@ -22,7 +22,7 @@ import { ANALYTICS_COLORS as CHART_COLORS } from "@/lib/analytics-colors";
 function PeriodSelect({ days, onChange, label }: { days: number; onChange: (days: number) => void; label: string }) {
   return (
     <div className="relative shrink-0">
-      <select aria-label={label} value={days} onChange={(event) => onChange(Number(event.target.value))} className="h-8 cursor-pointer appearance-none rounded-md border border-border bg-card py-1 pl-3 pr-8 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <select aria-label={label} value={days} onChange={(event) => onChange(Number(event.target.value))} className="h-8 cursor-pointer appearance-none rounded-md border border-input bg-background py-1 pl-3 pr-8 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-xs">
         {[7, 30, 90].map((period) => <option key={period} value={period}>Last {period} Days</option>)}
       </select>
       <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3 text-muted-foreground" />
@@ -71,9 +71,8 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Analytics"
-        description="Explore account growth, submission activity, and language insights."
-      />
+        title=""
+        description=""/>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 [&_h3]:font-medium [&_h3]:leading-snug">
         <ChartCard

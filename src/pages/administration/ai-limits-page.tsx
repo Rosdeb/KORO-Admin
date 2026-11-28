@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Save,
   AlertTriangle,
-  Info,
   Users,
   Globe,
   Database,
@@ -24,7 +23,6 @@ import {
   Check,
   Languages,
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -61,15 +59,6 @@ const DEFAULT_MODELS_PRESET = [
   "gemini-2.0-flash",
   "gemini-1.5-pro",
   "gemini-2.5-flash",
-];
-
-const COMMON_MODEL_SUGGESTIONS = [
-  "gemini-1.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-pro",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-exp-1206",
 ];
 
 const RATE_LIMIT_PRESETS: {
@@ -353,33 +342,29 @@ export function AiLimitsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="AI & Rate Limits"
-        description="Manage multi-model failover, search rate limiting quotas, and the Sub-5ms AI Query Cache with dictionary promotion moderation."
-        actions={
-          <div className="flex items-center gap-2">
+      {/* Tabs navigation & actions */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <TabsList className="bg-muted/70 p-1 w-full sm:w-auto">
+            <TabsTrigger value="config" className="gap-2 text-xs font-medium flex-1 sm:flex-none">
+              <Bot className="size-3.5" />
+              <span>Models & Search Limits</span>
+            </TabsTrigger>
+            <TabsTrigger value="cache" className="gap-2 text-xs font-medium flex-1 sm:flex-none">
+              <Sparkles className="size-3.5" />
+              <span>AI Translation Cache</span>
+              {totalCachedCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px] font-mono">
+                  {totalCachedCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <RefreshButton onRefresh={handleRefreshAll} isRefreshing={isRefreshing} />
           </div>
-        }
-      />
-
-      {/* Tabs navigation */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="bg-muted/70 p-1">
-          <TabsTrigger value="config" className="gap-2 text-xs font-medium">
-            <Bot className="size-3.5" />
-            <span>Models & Search Limits</span>
-          </TabsTrigger>
-          <TabsTrigger value="cache" className="gap-2 text-xs font-medium">
-            <Sparkles className="size-3.5" />
-            <span>AI Translation Cache</span>
-            {totalCachedCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px] font-mono">
-                {totalCachedCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
             TAB 1: CONFIGURATION (MODELS, LIMITS, RAM SEARCH INDEX)
@@ -387,7 +372,7 @@ export function AiLimitsPage() {
         <TabsContent value="config" className="space-y-6 mt-0">
           {/* Overview Stat Badges */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-4">
+            <Card className="border-0 shadow-sm bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Failover System</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -402,12 +387,9 @@ export function AiLimitsPage() {
                   {aiEnabled ? "Auto-Failover" : "Off"}
                 </Badge>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {models.length} model{models.length === 1 ? "" : "s"} in priority chain
-              </p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="border-0 shadow-sm bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Primary Model</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -417,10 +399,9 @@ export function AiLimitsPage() {
               <p className="mt-2 text-xl font-bold tracking-tight truncate">
                 {models[0] || "None"}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">First model called on fallback</p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="border-0 shadow-sm bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Search Quotas</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
@@ -435,10 +416,9 @@ export function AiLimitsPage() {
                   {rateLimits.enabled ? "Live" : "Bypassed"}
                 </Badge>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Daily & monthly request caps</p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="border-0 shadow-sm bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">User Search Cap</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -449,17 +429,14 @@ export function AiLimitsPage() {
                 {rateLimits.userDailyLimit}{" "}
                 <span className="text-xs font-normal text-muted-foreground">/ day</span>
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {rateLimits.userMonthlyLimit} searches / month
-              </p>
             </Card>
           </div>
 
           {/* Main Grid: AI Models Roster & Search Rate Limits */}
-          <div className="grid items-start gap-6 xl:grid-cols-2">
+          <div className="grid items-stretch gap-6 xl:grid-cols-2">
             {/* SECTION 1: AI MULTI-MODEL FAILOVER */}
-            <Card className="overflow-hidden">
-              <CardHeader className="border-b border-border p-4 sm:p-5">
+            <Card className="flex flex-col h-full overflow-hidden border-0 shadow-sm bg-card">
+              <CardHeader className="p-4 sm:p-5 shrink-0 min-h-[76px] flex justify-center pb-2 sm:pb-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -468,13 +445,13 @@ export function AiLimitsPage() {
                     <div>
                       <CardTitle className="text-base sm:text-lg">AI Model Failover Roster</CardTitle>
                       <CardDescription className="text-xs">
-                        Prioritized sequence for AI-powered translation searches
+                        Prioritized fallback order for AI search queries
                       </CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Label htmlFor="ai-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
-                      {aiEnabled ? "Failover On" : "Failover Off"}
+                      {aiEnabled ? "On" : "Off"}
                     </Label>
                     <Switch
                       id="ai-toggle"
@@ -485,129 +462,116 @@ export function AiLimitsPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-5 p-4 sm:p-5">
-                {/* Info Notice */}
-                <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-xs leading-relaxed text-muted-foreground">
-                  <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <div>
-                    <p className="font-semibold text-foreground">How Automatic Multi-Model Failover works</p>
-                    <p className="mt-0.5">
-                      When a search has no database match, it queries the <strong>Primary</strong> model. If that model hits a rate limit / quota (HTTP 429) or times out, the backend automatically tries the next model in this roster without erroring out to the user.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Model List */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Model Priority Chain ({models.length})
-                    </Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setEditedModels([...DEFAULT_MODELS_PRESET])}
-                    >
-                      <RotateCcw className="size-3 mr-1" /> Reset to Recommended
-                    </Button>
-                  </div>
-
-                  {isAiLoading ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-12 w-full rounded-lg" />
-                      <Skeleton className="h-12 w-full rounded-lg" />
-                      <Skeleton className="h-12 w-full rounded-lg" />
+              <CardContent className="flex flex-col flex-1 justify-between space-y-4 p-4 sm:p-5 pt-2">
+                <div className="space-y-4 flex-1">
+                  {/* Model List */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Priority Sequence ({models.length})
+                      </Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setEditedModels([...DEFAULT_MODELS_PRESET])}
+                      >
+                        <RotateCcw className="size-3 mr-1" /> Reset Defaults
+                      </Button>
                     </div>
-                  ) : models.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-                      <AlertTriangle className="mx-auto size-6 text-warning mb-1" />
-                      <p className="font-medium text-foreground">No models configured</p>
-                      <p className="mt-1">Add models below to activate automatic failover.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {models.map((model, index) => {
-                        const isPrimary = index === 0;
-                        return (
-                          <div
-                            key={`${model}-${index}`}
-                            className={`flex items-center justify-between gap-2 rounded-lg border p-2.5 transition-colors ${
-                              isPrimary
-                                ? "border-emerald-500/40 bg-emerald-500/[0.04] dark:border-emerald-500/30"
-                                : "border-border bg-card hover:bg-muted/30"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span
-                                className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                                  isPrimary
-                                    ? "bg-emerald-600 text-white dark:bg-emerald-500"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {index + 1}
-                              </span>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <code className="text-xs font-semibold text-foreground break-all">
-                                    {model}
-                                  </code>
-                                  {isPrimary ? (
-                                    <Badge variant="success" className="text-[10px] py-0 px-1.5 h-4">
-                                      Primary
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
-                                      Failover #{index}
-                                    </Badge>
-                                  )}
+
+                    {isAiLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-11 w-full rounded-lg" />
+                        <Skeleton className="h-11 w-full rounded-lg" />
+                        <Skeleton className="h-11 w-full rounded-lg" />
+                      </div>
+                    ) : models.length === 0 ? (
+                      <div className="rounded-xl bg-muted/30 p-6 text-center text-xs text-muted-foreground">
+                        <AlertTriangle className="mx-auto size-5 text-warning mb-1" />
+                        <p className="font-medium text-foreground">No models configured</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {models.map((model, index) => {
+                          const isPrimary = index === 0;
+                          return (
+                            <div
+                              key={`${model}-${index}`}
+                              className={`flex items-center justify-between gap-2 rounded-xl p-2.5 transition-colors shadow-2xs ${
+                                isPrimary
+                                  ? "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]"
+                                  : "bg-muted/40 hover:bg-muted/60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                                    isPrimary
+                                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {index + 1}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-xs font-semibold text-foreground break-all">
+                                      {model}
+                                    </code>
+                                    {isPrimary ? (
+                                      <Badge variant="success" className="text-[10px] py-0 px-1.5 h-4">
+                                        Primary
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                                        #{index + 1}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-muted-foreground hover:text-foreground"
-                                disabled={index === 0}
-                                onClick={() => moveModel(index, "up")}
-                                title="Move up in priority"
-                              >
-                                <ArrowUp className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-muted-foreground hover:text-foreground"
-                                disabled={index === models.length - 1}
-                                onClick={() => moveModel(index, "down")}
-                                title="Move down in priority"
-                              >
-                                <ArrowDown className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-destructive hover:bg-destructive/10"
-                                onClick={() => removeModel(index)}
-                                title="Remove from roster"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-muted-foreground hover:text-foreground"
+                                  disabled={index === 0}
+                                  onClick={() => moveModel(index, "up")}
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="size-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-muted-foreground hover:text-foreground"
+                                  disabled={index === models.length - 1}
+                                  onClick={() => moveModel(index, "down")}
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="size-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-destructive hover:bg-destructive/10"
+                                  onClick={() => removeModel(index)}
+                                  title="Remove"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Add Model Form */}
-                <div className="space-y-2 rounded-lg border border-dashed border-border p-3 bg-muted/20">
-                  <Label className="text-xs font-medium">Add Model to Failover Roster</Label>
-                  <div className="flex gap-2">
+                  {/* Add Model Form */}
+                  <div className="flex gap-2 pt-1">
                     <Input
                       placeholder="e.g. gemini-2.0-flash"
                       value={newModelName}
@@ -618,7 +582,7 @@ export function AiLimitsPage() {
                           addModel(newModelName);
                         }
                       }}
-                      className="h-8 text-xs font-mono"
+                      className="h-8 text-xs font-mono bg-background border border-input shadow-xs"
                     />
                     <Button
                       size="sm"
@@ -629,85 +593,58 @@ export function AiLimitsPage() {
                       <Plus className="size-3.5" /> Add
                     </Button>
                   </div>
-
-                  {/* Suggestions chips */}
-                  <div className="pt-1">
-                    <p className="text-[11px] text-muted-foreground mb-1.5">Quick suggestions:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {COMMON_MODEL_SUGGESTIONS.map((preset) => {
-                        const alreadyAdded = models.includes(preset);
-                        return (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => addModel(preset)}
-                            disabled={alreadyAdded}
-                            className={`rounded-md border px-2 py-0.5 text-[11px] font-mono transition-colors ${
-                              alreadyAdded
-                                ? "border-transparent bg-muted/60 text-muted-foreground/60 cursor-not-allowed"
-                                : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                            }`}
-                          >
-                            +{preset}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Save AI Button */}
-                <div className="flex items-center justify-between border-t border-border pt-4">
-                  <span className="text-xs text-muted-foreground">
-                    Applies immediately to live searches without restart
-                  </span>
+                <div className="flex items-center justify-end pt-3 mt-auto">
                   <Button
                     size="sm"
                     onClick={handleSaveAi}
                     disabled={updateAiMutation.isPending || isAiLoading}
-                    className="gap-1.5"
+                    className="gap-1.5 shadow-sm"
                   >
                     <Save className="size-4" />
-                    {updateAiMutation.isPending ? "Updating Roster…" : "Save AI Roster"}
+                    {updateAiMutation.isPending ? "Saving…" : "Save AI Roster"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* SECTION 2: SEARCH RATE LIMITS */}
-            <Card className="overflow-hidden">
-              <CardHeader className="border-b border-border p-4 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                      <Gauge className="size-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base sm:text-lg">Search Rate Limits</CardTitle>
-                      <CardDescription className="text-xs">
-                        Dynamic search quotas for registered users and anonymous visitors
-                      </CardDescription>
-                    </div>
+          {/* SECTION 2: SEARCH RATE LIMITS */}
+          <Card className="flex flex-col h-full overflow-hidden border-0 shadow-sm bg-card">
+            <CardHeader className="p-4 sm:p-5 shrink-0 min-h-[84px] flex justify-center">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                    <Gauge className="size-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="limits-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
-                      {rateLimits.enabled ? "Limits On" : "Limits Off"}
-                    </Label>
-                    <Switch
-                      id="limits-toggle"
-                      checked={rateLimits.enabled}
-                      onCheckedChange={(checked) =>
-                        setEditedRateLimits((prev) => ({
-                          ...(prev ?? rateLimits),
-                          enabled: checked,
-                        }))
-                      }
-                    />
+                  <div>
+                    <CardTitle className="text-base sm:text-lg">Search Rate Limits</CardTitle>
+                    <CardDescription className="text-xs">
+                      Dynamic search quotas for registered users and anonymous visitors
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="limits-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                    {rateLimits.enabled ? "Limits On" : "Limits Off"}
+                  </Label>
+                  <Switch
+                    id="limits-toggle"
+                    checked={rateLimits.enabled}
+                    onCheckedChange={(checked) =>
+                      setEditedRateLimits((prev) => ({
+                        ...(prev ?? rateLimits),
+                        enabled: checked,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </CardHeader>
 
-              <CardContent className="space-y-5 p-4 sm:p-5">
+            <CardContent className="flex flex-col flex-1 justify-between space-y-5 p-4 sm:p-5 pt-0">
+              <div className="space-y-5 flex-1">
                 {/* Presets Bar */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -724,7 +661,7 @@ export function AiLimitsPage() {
                             ...preset.config,
                           }))
                         }
-                        className="flex flex-col rounded-lg border border-border bg-card p-2.5 text-left text-xs transition-colors hover:border-primary/50 hover:bg-muted/20 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex flex-col rounded-xl border-0 bg-muted/30 p-2.5 text-left text-xs shadow-2xs transition-colors hover:bg-muted/60 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="font-semibold text-foreground">{preset.label}</span>
                         <span className="mt-1 text-[11px] text-muted-foreground">
@@ -739,7 +676,7 @@ export function AiLimitsPage() {
                 </div>
 
                 {/* Inputs: Registered Users */}
-                <div className="rounded-lg border border-border p-3.5 space-y-3 bg-muted/10">
+                <div className="rounded-xl border-0 p-3.5 space-y-3 bg-muted/30 shadow-2xs">
                   <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <Users className="size-4 text-blue-500" />
                     <span>Registered Users Limits</span>
@@ -747,7 +684,7 @@ export function AiLimitsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="user-daily" className="text-xs text-muted-foreground">
-                        Daily Limit (searches / day)
+                        Daily Limit
                       </Label>
                       <Input
                         id="user-daily"
@@ -760,12 +697,12 @@ export function AiLimitsPage() {
                             userDailyLimit: Math.max(1, parseInt(e.target.value) || 0),
                           }))
                         }
-                        className="h-9 text-sm"
+                        className="h-9 text-sm bg-background border border-input shadow-xs"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="user-monthly" className="text-xs text-muted-foreground">
-                        Monthly Limit (searches / month)
+                        Monthly Limit
                       </Label>
                       <Input
                         id="user-monthly"
@@ -778,14 +715,14 @@ export function AiLimitsPage() {
                             userMonthlyLimit: Math.max(1, parseInt(e.target.value) || 0),
                           }))
                         }
-                        className="h-9 text-sm"
+                        className="h-9 text-sm bg-background border border-input shadow-xs"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Inputs: Anonymous Visitors */}
-                <div className="rounded-lg border border-border p-3.5 space-y-3 bg-muted/10">
+                <div className="rounded-xl border-0 p-3.5 space-y-3 bg-muted/30 shadow-2xs">
                   <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <Globe className="size-4 text-emerald-500" />
                     <span>Anonymous Visitors Limits (IP-based)</span>
@@ -793,7 +730,7 @@ export function AiLimitsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="anon-daily" className="text-xs text-muted-foreground">
-                        Daily Limit (searches / day)
+                        Daily Limit
                       </Label>
                       <Input
                         id="anon-daily"
@@ -806,12 +743,12 @@ export function AiLimitsPage() {
                             anonDailyLimit: Math.max(1, parseInt(e.target.value) || 0),
                           }))
                         }
-                        className="h-9 text-sm"
+                        className="h-9 text-sm bg-background border border-input shadow-xs"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="anon-monthly" className="text-xs text-muted-foreground">
-                        Monthly Limit (searches / month)
+                        Monthly Limit
                       </Label>
                       <Input
                         id="anon-monthly"
@@ -824,42 +761,32 @@ export function AiLimitsPage() {
                             anonMonthlyLimit: Math.max(1, parseInt(e.target.value) || 0),
                           }))
                         }
-                        className="h-9 text-sm"
+                        className="h-9 text-sm bg-background border border-input shadow-xs"
                       />
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Information Callout */}
-                <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
-                  <Info className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-                  <p>
-                    When a user or IP exceeds their limit, the API returns HTTP 429 Too Many Requests until the window resets (midnight UTC for daily, 1st of month for monthly).
-                  </p>
-                </div>
-
-                {/* Save Limits Button */}
-                <div className="flex items-center justify-between border-t border-border pt-4">
-                  <span className="text-xs text-muted-foreground">
-                    Updates in-memory rate limiter immediately
-                  </span>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveLimits}
-                    disabled={updateLimitsMutation.isPending || isLimitsLoading}
-                    className="gap-1.5"
-                  >
-                    <Save className="size-4" />
-                    {updateLimitsMutation.isPending ? "Updating Limits…" : "Save Rate Limits"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Save Limits Button */}
+              <div className="flex items-center justify-end gap-3 pt-4 mt-auto">
+                <Button
+                  size="sm"
+                  onClick={handleSaveLimits}
+                  disabled={updateLimitsMutation.isPending || isLimitsLoading}
+                  className="gap-1.5 shrink-0 shadow-sm"
+                >
+                  <Save className="size-4" />
+                  {updateLimitsMutation.isPending ? "Updating Limits…" : "Save Rate Limits"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
           </div>
 
           {/* SECTION 3: IN-MEMORY SEARCH INDEX & MONGODB SYNC */}
-          <Card className="overflow-hidden border-border">
-            <CardHeader className="border-b border-border bg-muted/20 p-4 sm:p-5">
+          <Card className="overflow-hidden border-0 shadow-sm bg-card">
+            <CardHeader className="p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -870,7 +797,7 @@ export function AiLimitsPage() {
                       Search Engine In-Memory Index
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      RAM binary-search and sentence token cache for lightning-fast vocabulary searches
+                      RAM binary-search and sentence token cache for vocabulary searches
                     </CardDescription>
                   </div>
                 </div>
@@ -880,42 +807,42 @@ export function AiLimitsPage() {
                   size="sm"
                   onClick={() => reindexMutation.mutate()}
                   disabled={reindexMutation.isPending}
-                  className="gap-1.5 shadow-sm"
+                  className="gap-1.5 border-0 shadow-2xs bg-muted/40 hover:bg-muted/70"
                 >
                   <Database className={`size-3.5 ${reindexMutation.isPending ? "animate-spin text-primary" : ""}`} />
                   {reindexMutation.isPending ? "Rebuilding Index…" : "Rebuild Search Index"}
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-5 space-y-4">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+                <div className="rounded-xl border-0 bg-muted/30 p-3.5 space-y-1 shadow-2xs">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                     <CheckCircle2 className="size-3.5 text-emerald-500" />
                     <span>Auto-Sync on Approval</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-normal">
-                    Approving single submissions or bulk submissions automatically syncs the RAM index instantly.
+                    Approving single or bulk submissions syncs the RAM index instantly.
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+                <div className="rounded-xl border-0 bg-muted/30 p-3.5 space-y-1 shadow-2xs">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                     <CheckCircle2 className="size-3.5 text-emerald-500" />
                     <span>Live Database Fallback</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-normal">
-                    Searches query MongoDB in real time so newly inserted words appear with zero delay.
+                    Queries MongoDB directly so newly inserted words appear with zero delay.
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
+                <div className="rounded-xl border-0 bg-muted/30 p-3.5 space-y-1 shadow-2xs">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                     <CheckCircle2 className="size-3.5 text-emerald-500" />
                     <span>Manual Admin Reindex</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-normal">
-                    Trigger an on-demand rebuild anytime bulk imports or raw MongoDB database modifications occur.
+                    Trigger an on-demand rebuild anytime bulk imports or direct DB changes occur.
                   </p>
                 </div>
               </div>
@@ -929,7 +856,7 @@ export function AiLimitsPage() {
         <TabsContent value="cache" className="space-y-6 mt-0">
           {/* Cache Metrics Banner */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-4">
+            <Card className="p-4 border-0 shadow-sm bg-card">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Cached Sentences</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -942,7 +869,7 @@ export function AiLimitsPage() {
               <p className="mt-1 text-xs text-muted-foreground">Persisted in MongoDB ai_db_search</p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-4 border-0 shadow-sm bg-card">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Search Cache Hits</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -955,7 +882,7 @@ export function AiLimitsPage() {
               <p className="mt-1 text-xs text-muted-foreground">Gemini API calls saved</p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-4 border-0 shadow-sm bg-card">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Response Latency</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -969,7 +896,7 @@ export function AiLimitsPage() {
               <p className="mt-1 text-xs text-muted-foreground">Sub-millisecond DB/RAM retrieval</p>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-4 border-0 shadow-sm bg-card">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Promoted to Dict</span>
                 <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -984,18 +911,18 @@ export function AiLimitsPage() {
           </div>
 
           {/* Table Container Card */}
-          <Card className="overflow-hidden border-border">
-            <CardHeader className="border-b border-border bg-muted/10 p-4 sm:p-5">
+          <Card className="overflow-hidden border-0 shadow-sm bg-card">
+            <CardHeader className="p-4 sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
                     <span>Cached Sentence Translations</span>
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <Badge variant="outline" className="font-mono text-xs border-0 bg-muted/50">
                       {filteredCacheEntries.length} / {totalCachedCount}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="text-xs mt-0.5">
-                    Sentence-aware AI translations cached from live searches. Review and promote them directly into the verified dictionary.
+                    Sentence-aware AI translations cached from live searches. Review and promote them directly into the dictionary.
                   </CardDescription>
                 </div>
 
@@ -1007,7 +934,7 @@ export function AiLimitsPage() {
                       placeholder="Filter queries, translations…"
                       value={searchFilter}
                       onChange={(e) => setSearchFilter(e.target.value)}
-                      className="h-8 pl-8 text-xs"
+                      className="h-8 pl-8 text-xs bg-background border border-input shadow-xs"
                     />
                   </div>
 
@@ -1015,7 +942,7 @@ export function AiLimitsPage() {
                     value={statusFilter}
                     onValueChange={(val) => setStatusFilter(val as "ALL" | "CACHED" | "PROMOTED")}
                   >
-                    <SelectTrigger className="h-8 w-[130px] text-xs">
+                    <SelectTrigger className="h-8 w-[130px] text-xs bg-background border border-input shadow-xs">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1112,7 +1039,7 @@ export function AiLimitsPage() {
                           <TableCell className="align-top py-3 text-center">
                             <Badge
                               variant="outline"
-                              className="font-mono text-xs gap-1 border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+                              className="font-mono text-xs gap-1 border-0 bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-2xs"
                             >
                               <Zap className="size-3 fill-amber-500/30" />
                               {entry.hitCount ?? 1}
@@ -1121,7 +1048,7 @@ export function AiLimitsPage() {
 
                           {/* AI Model */}
                           <TableCell className="align-top py-3">
-                            <Badge variant="secondary" className="font-mono text-[10px] truncate max-w-[120px]">
+                            <Badge variant="secondary" className="font-mono text-[10px] truncate max-w-[120px] border-0 shadow-2xs">
                               {modelName}
                             </Badge>
                           </TableCell>
@@ -1132,7 +1059,7 @@ export function AiLimitsPage() {
                               {isPromoted ? (
                                 <Badge
                                   variant="success"
-                                  className="text-[10px] h-7 px-2 gap-1 font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                  className="text-[10px] h-7 px-2.5 gap-1 font-medium bg-emerald-500/15 text-emerald-600 border-0 shadow-2xs"
                                 >
                                   <Check className="size-3" />
                                   Promoted
@@ -1141,7 +1068,7 @@ export function AiLimitsPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-7 text-xs gap-1 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                                  className="h-7 text-xs gap-1 border-0 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 shadow-2xs"
                                   onClick={() => promoteMutation.mutate(entry.id)}
                                   disabled={isPromoting}
                                   title="Promote directly into verified official dictionary"

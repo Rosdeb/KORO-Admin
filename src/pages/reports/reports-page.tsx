@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { Download } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -77,10 +76,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Platform Reports"
-        description="Aggregate reports generated from live API data. Export any table below to CSV."
-      />
+      
 
       <Tabs defaultValue="summary">
         <TabsList>
@@ -90,7 +86,7 @@ export function ReportsPage() {
         </TabsList>
 
         <TabsContent value="summary">
-          <Card>
+          <Card className="border-0 shadow-sm bg-card">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle>Platform Summary</CardTitle>
@@ -131,7 +127,7 @@ export function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="growth">
-          <Card>
+          <Card className="border-0 shadow-sm bg-card">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle>User Growth by Week</CardTitle>
@@ -172,7 +168,7 @@ export function ReportsPage() {
 
         <TabsContent value="content">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card>
+            <Card className="border-0 shadow-sm bg-card">
               <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle>Translations per Language</CardTitle>
                 <Button
@@ -208,7 +204,7 @@ export function ReportsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 shadow-sm bg-card">
               <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle>Concepts per Category</CardTitle>
                 <Button

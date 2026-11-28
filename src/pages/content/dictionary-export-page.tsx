@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -68,8 +68,7 @@ export function DictionaryExportPage() {
 
   // Filters
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("ALL");
-  const [selectedLanguageIds, setSelectedLanguageIds] = useState<string[]>([]);
-  const [hasInitializedLangs, setHasInitializedLangs] = useState(false);
+  const [customLanguageIds, setCustomLanguageIds] = useState<string[] | null>(null);
 
   // Book Specific Configuration State
   const [bookConfig, setBookConfig] = useState<BookConfig>(DEFAULT_BOOK_CONFIG);
@@ -121,12 +120,9 @@ export function DictionaryExportPage() {
     return defaults;
   }, [languages]);
 
-  useEffect(() => {
-    if (!hasInitializedLangs && defaultLanguageIds.length > 0) {
-      setSelectedLanguageIds(defaultLanguageIds);
-      setHasInitializedLangs(true);
-    }
-  }, [defaultLanguageIds, hasInitializedLangs]);
+  const selectedLanguageIds = useMemo(() => {
+    return customLanguageIds ?? defaultLanguageIds;
+  }, [customLanguageIds, defaultLanguageIds]);
 
   const totalConcepts =
     typeof statsQuery.data?.totalConcepts === "number" ? statsQuery.data.totalConcepts : null;
@@ -148,17 +144,19 @@ export function DictionaryExportPage() {
   }, [selectedCategoryId, categories]);
 
   function handleToggleLanguage(id: string) {
-    setSelectedLanguageIds((prev) =>
-      prev.includes(id) ? prev.filter((langId) => langId !== id) : [...prev, id],
+    setCustomLanguageIds(
+      selectedLanguageIds.includes(id)
+        ? selectedLanguageIds.filter((langId) => langId !== id)
+        : [...selectedLanguageIds, id],
     );
   }
 
   function handleSelectAllLanguages() {
-    setSelectedLanguageIds(languages.map((l) => l.id));
+    setCustomLanguageIds(languages.map((l) => l.id));
   }
 
   function handleResetDefaultLanguages() {
-    setSelectedLanguageIds(defaultLanguageIds);
+    setCustomLanguageIds(null);
   }
 
   // 1. Download CSV directly
@@ -279,31 +277,10 @@ export function DictionaryExportPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Back navigation & breadcrumbs */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-2 h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          onClick={handleBack}
-        >
-          <ArrowLeft className="size-4" />
-          <span>Back</span>
-        </Button>
-        <span className="text-muted-foreground/40 text-xs">/</span>
-        <Link
-          to="/dashboard"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Dashboard
-        </Link>
-        <span className="text-muted-foreground/40 text-xs">/</span>
-        <span className="text-xs text-muted-foreground">Content</span>
-        <span className="text-muted-foreground/40 text-xs">/</span>
-        <span className="text-xs font-medium text-foreground">Dictionary Export</span>
-      </div>
+  
 
       <PageHeader
-        title="Dictionary Export & Book System"
+        title=""
         description="Export filtered multilingual records as clean UTF-8 CSV or compile publication-ready A4 Dictionary Books (PDF)"
         actions={
           <div className="flex items-center gap-2">
@@ -340,8 +317,8 @@ export function DictionaryExportPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Export Configuration Card */}
-        <Card className="lg:col-span-2 border-border shadow-sm">
-          <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-border/60">
+        <Card className="lg:col-span-2 border-0 shadow-sm bg-card">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
             {/* Format Mode Selector */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -350,7 +327,7 @@ export function DictionaryExportPage() {
                 </span>
                 <Badge
                   variant="outline"
-                  className="gap-1 border-primary/30 bg-primary/10 text-primary font-medium text-[11px] px-2 py-0.5"
+                  className="gap-1 border-0 bg-primary/10 text-primary font-medium text-[11px] px-2 py-0.5 shadow-2xs"
                 >
                   <Sparkles className="size-3" />
                   Fast Direct MongoDB Pipeline
@@ -362,10 +339,10 @@ export function DictionaryExportPage() {
                 <button
                   type="button"
                   onClick={() => setExportMode("csv")}
-                  className={`flex items-start gap-3 p-3 sm:p-3.5 rounded-xl border text-left transition-all outline-none ${
+                  className={`flex items-start gap-3 p-3 sm:p-3.5 rounded-xl text-left transition-all outline-none ${
                     exportMode === "csv"
-                      ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-sm"
-                      : "bg-card border-border/70 hover:bg-muted/40 text-muted-foreground"
+                      ? "bg-primary/10 ring-2 ring-primary/20 shadow-xs text-foreground"
+                      : "bg-muted/30 shadow-2xs hover:bg-muted/50 text-muted-foreground"
                   }`}
                 >
                   <div
@@ -383,7 +360,7 @@ export function DictionaryExportPage() {
                       {exportMode === "csv" && <CheckCircle2 className="size-4 text-primary" />}
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                      Raw tabular dataset with UTF-8 BOM for Excel, Google Sheets & data analysis.
+                      Raw tabular dataset with UTF-8 BOM for Excel and Sheets.
                     </p>
                   </div>
                 </button>
@@ -392,10 +369,10 @@ export function DictionaryExportPage() {
                 <button
                   type="button"
                   onClick={() => setExportMode("book-pdf")}
-                  className={`flex items-start gap-3 p-3 sm:p-3.5 rounded-xl border text-left transition-all outline-none ${
+                  className={`flex items-start gap-3 p-3 sm:p-3.5 rounded-xl text-left transition-all outline-none ${
                     exportMode === "book-pdf"
-                      ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-sm"
-                      : "bg-card border-border/70 hover:bg-muted/40 text-muted-foreground"
+                      ? "bg-primary/10 ring-2 ring-primary/20 shadow-xs text-foreground"
+                      : "bg-muted/30 shadow-2xs hover:bg-muted/50 text-muted-foreground"
                   }`}
                 >
                   <div
@@ -413,7 +390,7 @@ export function DictionaryExportPage() {
                       {exportMode === "book-pdf" && <CheckCircle2 className="size-4 text-primary" />}
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                      Publication-ready A4 lexicon book with Cover, Table of Contents & A-Z indexing.
+                      A4 lexicon book with Cover, Table of Contents & A-Z indexing.
                     </p>
                   </div>
                 </button>
@@ -437,7 +414,7 @@ export function DictionaryExportPage() {
                 </span>
               </div>
               <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                <SelectTrigger id="category-select" className="w-full text-xs sm:text-sm h-10">
+                <SelectTrigger id="category-select" className="w-full text-xs sm:text-sm h-10 bg-background border border-input shadow-xs">
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
@@ -492,10 +469,10 @@ export function DictionaryExportPage() {
                       key={lang.id}
                       type="button"
                       onClick={() => handleToggleLanguage(lang.id)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`flex items-center justify-between p-2.5 rounded-xl text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         isChecked
-                          ? "bg-primary/5 border-primary/40 text-foreground"
-                          : "bg-muted/20 border-border/70 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                          ? "bg-primary/10 text-foreground shadow-2xs"
+                          : "bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground shadow-2xs"
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -526,7 +503,7 @@ export function DictionaryExportPage() {
 
             {/* 3. Conditional: Book PDF Settings vs CSV Summary */}
             {exportMode === "book-pdf" ? (
-              <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-3.5 sm:p-5">
+              <div className="space-y-4 rounded-xl border-0 bg-primary/5 p-3.5 sm:p-5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <BookMarked className="size-4 text-primary" />
@@ -534,7 +511,7 @@ export function DictionaryExportPage() {
                       Book Layout & Publication Details
                     </span>
                   </div>
-                  <Badge variant="outline" className="text-[10px] bg-background">
+                  <Badge variant="outline" className="text-[10px] bg-background border border-input shadow-xs">
                     A4 Vector Print Engine
                   </Badge>
                 </div>
@@ -550,7 +527,7 @@ export function DictionaryExportPage() {
                       onChange={(e) =>
                         setBookConfig((prev) => ({ ...prev, title: e.target.value }))
                       }
-                      className="h-9 text-xs bg-background"
+                      className="h-9 text-xs bg-background border border-input shadow-xs"
                       placeholder="e.g. KOROT Multilingual Dictionary"
                     />
                   </div>
@@ -565,7 +542,7 @@ export function DictionaryExportPage() {
                       onChange={(e) =>
                         setBookConfig((prev) => ({ ...prev, subtitle: e.target.value }))
                       }
-                      className="h-9 text-xs bg-background"
+                      className="h-9 text-xs bg-background border border-input shadow-xs"
                       placeholder="e.g. Koch – Bangla – English Comprehensive Lexicon"
                     />
                   </div>
@@ -580,7 +557,7 @@ export function DictionaryExportPage() {
                         setBookConfig((c) => ({ ...c, layout: val }))
                       }
                     >
-                      <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectTrigger className="h-9 text-xs bg-background border border-input shadow-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -611,7 +588,7 @@ export function DictionaryExportPage() {
                         setBookConfig((c) => ({ ...c, primaryLanguage: val }))
                       }
                     >
-                      <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectTrigger className="h-9 text-xs bg-background border border-input shadow-xs">
                         <SelectValue placeholder="First Selected" />
                       </SelectTrigger>
                       <SelectContent>
@@ -632,7 +609,7 @@ export function DictionaryExportPage() {
                         setBookConfig((c) => ({ ...c, fontSize: val }))
                       }
                     >
-                      <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectTrigger className="h-9 text-xs bg-background border border-input shadow-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -645,7 +622,7 @@ export function DictionaryExportPage() {
                 </div>
 
                 {/* Switches */}
-                <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-border/50 text-xs">
+                <div className="flex flex-wrap items-center gap-4 pt-1 text-xs">
                   <div className="flex items-center gap-2">
                     <Switch
                       id="opt-cover"
@@ -688,7 +665,7 @@ export function DictionaryExportPage() {
               </div>
             ) : (
               /* CSV Parameters Summary Box */
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-muted/40 border border-border/60">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-muted/30 shadow-2xs">
                 <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0">
                   <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                     Format
@@ -699,7 +676,7 @@ export function DictionaryExportPage() {
                   </p>
                 </div>
 
-                <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0 border-x border-border/40 px-1 sm:px-0 sm:border-0">
+                <div className="space-y-0.5 sm:space-y-1 text-center sm:text-left min-w-0 px-1 sm:px-0">
                   <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
                     Category Scope
                   </p>
@@ -720,7 +697,7 @@ export function DictionaryExportPage() {
             )}
 
             {/* 4. Columns & Target Preview */}
-            <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-4 space-y-2.5">
+            <div className="rounded-xl bg-muted/30 p-3 sm:p-4 space-y-2.5 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                 <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <Filter className="size-3.5 text-primary" />
@@ -732,25 +709,19 @@ export function DictionaryExportPage() {
               </div>
 
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <span className="inline-flex items-center rounded-md bg-muted px-2 sm:px-2.5 py-1 text-xs font-mono font-bold text-foreground border border-border">
+                <span className="inline-flex items-center rounded-md bg-muted px-2 sm:px-2.5 py-1 text-xs font-mono font-bold text-foreground shadow-2xs">
                   ID
                 </span>
                 {selectedLanguagesList.map((lang) => (
                   <span
                     key={lang.id}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-2 sm:px-2.5 py-1 text-xs font-mono font-medium border border-primary/20"
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-2 sm:px-2.5 py-1 text-xs font-mono font-medium shadow-2xs"
                   >
                     <Check className="size-3 text-primary" />
                     {lang.name}
                   </span>
                 ))}
               </div>
-
-              <p className="text-xs text-muted-foreground leading-relaxed text-left">
-                {exportMode === "book-pdf"
-                  ? "Book layout maps the selected languages side-by-side with phonetic clarity and Bengali / Koch native typographic conjunct support. Rendered with vector precision."
-                  : "Export will stream records with the selected columns. Pre-configured with a UTF-8 Byte Order Mark (BOM) to preserve Bangla (বাংলা), Koch, and native scripts seamlessly across Microsoft Excel, Apple Numbers, and data tools."}
-              </p>
             </div>
 
             {/* 5. Action Buttons */}
@@ -823,13 +794,13 @@ export function DictionaryExportPage() {
 
         {/* Sidebar Summary Card */}
         <div className="space-y-4">
-          <Card className="border-border">
+          <Card className="border-0 shadow-sm bg-card">
             <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
               <CardTitle className="text-sm font-semibold">Dictionary Summary</CardTitle>
               <CardDescription className="text-xs">Live platform dataset metrics</CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-2.5 sm:space-y-3">
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 gap-2">
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-2 sm:space-y-2.5">
+              <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-muted/20 gap-2">
                 <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <Database className="size-3.5" /> Total Concepts
                 </span>
@@ -837,7 +808,7 @@ export function DictionaryExportPage() {
                   {totalConcepts !== null ? formatNumber(totalConcepts) : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 gap-2">
+              <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-muted/20 gap-2">
                 <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <Globe className="size-3.5" /> Total Translations
                 </span>
@@ -845,7 +816,7 @@ export function DictionaryExportPage() {
                   {totalTranslations !== null ? formatNumber(totalTranslations) : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 gap-2">
+              <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-muted/20 gap-2">
                 <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <FolderTree className="size-3.5" /> Total Categories
                 </span>
@@ -853,7 +824,7 @@ export function DictionaryExportPage() {
                   {categories.length > 0 ? categories.length : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs py-1.5 gap-2">
+              <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-muted/20 gap-2">
                 <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                   <LanguagesIcon className="size-3.5" /> Total Languages
                 </span>
@@ -865,7 +836,7 @@ export function DictionaryExportPage() {
           </Card>
 
           {/* Book Features Guide Card */}
-          <Card className="border-border bg-muted/20">
+          <Card className="border-0 shadow-sm bg-card">
             <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
                 <BookOpen className="size-4 text-primary" />
@@ -879,7 +850,7 @@ export function DictionaryExportPage() {
               <div className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                 <span>
-                  <strong>Full Bengali & Koch Unicode:</strong> Complete support for complex conjuncts (যুক্তাক্ষর) without missing glyphs.
+                  <strong>Full Bengali & Koch Unicode:</strong> Complete support for complex conjuncts without missing glyphs.
                 </span>
               </div>
               <div className="flex items-start gap-2">

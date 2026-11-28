@@ -143,7 +143,7 @@ export function MyActivityPage() {
       {/* Clean Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">My Activity</h1>
+        
           <p className="text-xs text-muted-foreground mt-0.5">
             Audit history of your personal platform actions, edits, and contributions
           </p>

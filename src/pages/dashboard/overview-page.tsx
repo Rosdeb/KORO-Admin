@@ -147,7 +147,7 @@ export function OverviewPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
         {/* Submission Queue */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 border-0 shadow-sm bg-card">
           <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
             <div>
               <CardTitle className="text-base">Submission Queue</CardTitle>
@@ -214,7 +214,7 @@ export function OverviewPage() {
         </Card>
 
         {/* Platform Statistics */}
-        <Card className="self-start">
+        <Card className="self-start border-0 shadow-sm bg-card">
           <CardHeader className="flex-row items-start justify-between gap-2 pb-3">
             <div className="min-w-0 space-y-0.5">
               <CardTitle className="flex items-center gap-2 text-base">

@@ -147,7 +147,7 @@ export function SubmissionsQueuePage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Translation Submissions"
+        title=""
         description="Community-submitted dictionary words waiting for review."
         actions={
           <>

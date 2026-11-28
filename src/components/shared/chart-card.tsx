@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { BarChart3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChartCardProps {
   title: string;
@@ -32,7 +33,7 @@ export function ChartCard({
   children,
 }: ChartCardProps) {
   return (
-    <Card className={className}>
+    <Card className={cn("border-0 shadow-sm bg-card hover:shadow-md transition-shadow", className)}>
       <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

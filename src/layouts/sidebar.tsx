@@ -80,7 +80,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all duration-150",
+                        "group relative flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium outline-none transition-all duration-150",
                         "focus-visible:ring-2 focus-visible:ring-[var(--sidebar-active-bg)]/50",
                         isActive
                           ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)] font-semibold shadow-sm"

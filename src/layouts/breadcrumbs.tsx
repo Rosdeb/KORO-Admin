@@ -46,17 +46,22 @@ export function Breadcrumbs() {
   }, []);
 
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+    <nav className="flex items-center gap-2 text-muted-foreground min-w-0">
       {crumbs.map((crumb) => (
-        <span key={crumb.to} className="flex items-center gap-1.5">
+        <span key={crumb.to} className="flex items-center gap-2 min-w-0">
           {crumb.isLast ? (
-            <span className="font-medium text-foreground">{crumb.label}</span>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+              {crumb.label}
+            </span>
           ) : (
             <>
-              <Link to={crumb.to} className="hover:text-foreground">
+              <Link
+                to={crumb.to}
+                className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors truncate"
+              >
                 {crumb.label}
               </Link>
-              <ChevronRight className="size-3.5" />
+              <ChevronRight className="size-3.5 sm:size-4 text-muted-foreground/50 shrink-0" />
             </>
           )}
         </span>

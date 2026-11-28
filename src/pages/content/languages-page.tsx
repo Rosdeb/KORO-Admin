@@ -134,8 +134,8 @@ export function LanguagesPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Languages"
-        description="Languages available across the Koro platform."
+        title=""
+        description="Languages available across the Korot platform."
         actions={
           <>
             <RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />

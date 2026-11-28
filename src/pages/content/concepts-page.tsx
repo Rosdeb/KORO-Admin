@@ -140,7 +140,7 @@ export function ConceptsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Concepts"
+        title=""
         description="The vocabulary items that get translated across languages."
         actions={
           <>

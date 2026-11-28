@@ -26,7 +26,7 @@ export function StatCard({
   unavailableReason,
 }: StatCardProps) {
   return (
-    <Card className="relative overflow-hidden p-5 transition-shadow hover:shadow-md">
+    <Card className="relative overflow-hidden p-5 border-0 shadow-sm bg-card transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
         {Icon && (

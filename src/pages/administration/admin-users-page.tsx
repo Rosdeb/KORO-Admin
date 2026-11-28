@@ -32,7 +32,7 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Admin Users"
+        title=""
         description="Accounts holding elevated (Admin, Reviewer, or Moderator) roles. Manage grants from a user's detail page."
         actions={<RefreshButton onRefresh={() => refetch()} isRefreshing={isFetching} />}
       />

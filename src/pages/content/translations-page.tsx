@@ -204,7 +204,7 @@ export function TranslationsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Translations"
+        title=""
         description="Verified translations linking concepts to languages."
         actions={
           <>

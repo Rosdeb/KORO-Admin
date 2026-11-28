@@ -262,7 +262,7 @@ export function ContactMessagesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Contact Messages"
+        title=""
         description="View and reply to public inquiries submitted through the contact form."
         actions={
           <>
