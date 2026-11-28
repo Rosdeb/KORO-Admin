@@ -292,9 +292,9 @@ export function GitHubActivityCalendar({
         ].map((card) => (
           <div
             key={card.label}
-            className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-border/80"
+            className="flex items-center gap-3 rounded-xl border-0 shadow-sm bg-card p-3.5 transition-all hover:shadow-md"
           >
-            <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", card.iconClass)}>
+            <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", card.iconClass)}>
               <card.icon className="size-4" />
             </div>
             <div className="min-w-0">
@@ -305,8 +305,8 @@ export function GitHubActivityCalendar({
         ))}
       </div>
 
-      {/* GitHub Contribution Heatmap — Expanded, Left-to-Right Aligned, NO OUTER BORDER */}
-      <div className="w-full rounded-lg bg-card/40 dark:bg-[#0d1117] p-5 sm:p-6">
+      {/* GitHub Contribution Heatmap — Expanded, Left-to-Right Aligned with clean shadow */}
+      <div className="w-full rounded-xl border-0 shadow-sm bg-card p-5 sm:p-6 transition-all hover:shadow-md">
         {/* Top Header Row — Left aligned count & Right aligned year switcher */}
         <div className="flex items-center justify-between pb-3 text-xs sm:text-sm">
           <span className="font-semibold tracking-tight text-foreground/90">

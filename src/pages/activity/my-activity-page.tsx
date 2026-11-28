@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Pagination } from "@/components/shared/pagination";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -141,9 +142,8 @@ export function MyActivityPage() {
   return (
     <div className="space-y-6">
       {/* Clean Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-        
           <p className="text-xs text-muted-foreground mt-0.5">
             Audit history of your personal platform actions, edits, and contributions
           </p>
@@ -151,7 +151,7 @@ export function MyActivityPage() {
 
         <div className="flex items-center gap-2">
           {data?.totalElements !== undefined && (
-            <Badge variant="secondary" className="text-xs font-mono">
+            <Badge variant="secondary" className="text-xs font-mono border-0 shadow-2xs">
               {data.totalElements.toLocaleString()} recorded
             </Badge>
           )}
@@ -198,7 +198,7 @@ export function MyActivityPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectTrigger className="h-8 text-xs w-[140px] bg-background border border-input shadow-xs">
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
@@ -213,7 +213,7 @@ export function MyActivityPage() {
           )}
 
           {/* Compact Date Range Pickers */}
-          <div className="flex items-center gap-1.5 rounded-md border border-border/70 bg-muted/20 px-2 py-1 text-xs">
+          <div className="flex items-center gap-1.5 rounded-lg border border-input bg-background px-2.5 py-1 text-xs shadow-xs">
             <CalendarIcon className="size-3 text-muted-foreground" />
             <span className="text-[11px] text-muted-foreground">From:</span>
             <Input
@@ -224,11 +224,11 @@ export function MyActivityPage() {
                 if (selectedDate && e.target.value !== selectedDate) setSelectedDate(null);
                 setPage(1);
               }}
-              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
+              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0 shadow-none"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 rounded-md border border-border/70 bg-muted/20 px-2 py-1 text-xs">
+          <div className="flex items-center gap-1.5 rounded-lg border border-input bg-background px-2.5 py-1 text-xs shadow-xs">
             <CalendarIcon className="size-3 text-muted-foreground" />
             <span className="text-[11px] text-muted-foreground">To:</span>
             <Input
@@ -239,7 +239,7 @@ export function MyActivityPage() {
                 if (selectedDate && e.target.value !== selectedDate) setSelectedDate(null);
                 setPage(1);
               }}
-              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
+              className="h-6 w-28 border-0 bg-transparent p-0 text-xs focus-visible:ring-0 shadow-none"
             />
           </div>
 
@@ -257,7 +257,7 @@ export function MyActivityPage() {
       </div>
 
       {/* Flat Minimal Table Container */}
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <Card className="overflow-hidden border-0 shadow-sm bg-card">
         {isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -297,7 +297,7 @@ export function MyActivityPage() {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className="text-[11px] font-mono font-normal bg-muted/20 border-border"
+                          className="text-[11px] font-mono font-normal bg-muted/30 border-0 shadow-2xs"
                         >
                           {log.activityType}
                         </Badge>
@@ -309,7 +309,7 @@ export function MyActivityPage() {
                       {/* Device Info */}
                       <TableCell className="text-muted-foreground text-xs">
                         <div
-                          className="inline-flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded text-[11px] max-w-[150px] truncate"
+                          className="inline-flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded text-[11px] max-w-[150px] truncate shadow-2xs"
                           title={log.device ?? "Unknown"}
                         >
                           <DeviceIcon className="size-3 shrink-0 text-muted-foreground" />
@@ -339,7 +339,7 @@ export function MyActivityPage() {
               </TableBody>
             </Table>
 
-            <div className="border-t border-border p-3 bg-muted/10">
+            <div className="p-3 bg-muted/10">
               <Pagination
                 page={page}
                 pageSize={pageSize}
@@ -353,7 +353,7 @@ export function MyActivityPage() {
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
